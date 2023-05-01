@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "./src",
+		"composite": true,
+		"outDir": "./dist",
+		"tsBuildInfoFile": "./dist/worker.tsbuildinfo",
+		"types": ["@cloudflare/workers-types"],
+		"module": "commonjs",
+		"target": "esnext",
+		"lib": ["esnext"]
+	},
+	"include": ["src/**/*"]
+}

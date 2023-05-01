@@ -1,0 +1,20 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "./src",
+        "composite": true,
+        "outDir": "./dist",
+        "tsBuildInfoFile": "./dist/node-http.tsbuildinfo",
+        "types": [
+            "@types/node"
+        ],
+        "module": "commonjs",
+        "target": "esnext",
+        "lib": [
+            "esnext"
+        ]
+    },
+    "include": [
+        "src/**/*"
+    ]
+}

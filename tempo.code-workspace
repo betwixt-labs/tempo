@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "./typescript",
+			"name": "TypeScript Runtime"
+		}
+	],
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"rainway.vscode-bebop",
+			"ms-vscode.vscode-typescript-next",
+			"timonwong.shellcheck",
+			"foxundermoon.shell-format",
+			"esbenp.prettier-vscode"
+		]
+	}
+}

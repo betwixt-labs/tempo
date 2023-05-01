@@ -1,0 +1,32 @@
+{
+  "name": "tempojs",
+  "version": "0.0.1-alpha.10",
+  "description": "something",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "format": "yarn prettier --write \"packages/**/src/*.ts\"",
+    "build": "./build.sh",
+    "lint:check": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "style:check": "yarn prettier --check \"packages/**/src/*.ts\"",
+    "style:fix": "yarn prettier --write \"packages/**/src/*.ts\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "@typescript-eslint/parser": "^5.44.0",
+    "eslint": "^8.28.0",
+    "prettier": "^2.8.0",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4",
+    "vitest": "^0.30.1"
+  },
+  "dependencies": {
+    "@tempojs/client": "^0.0.1-alpha.10",
+    "@tempojs/common": "^0.0.1-alpha.10",
+    "@tempojs/server": "^0.0.1-alpha.10",
+    "bebop": "^2.5.1"
+  }
+}

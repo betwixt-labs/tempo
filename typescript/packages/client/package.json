@@ -1,0 +1,21 @@
+{
+  "name": "@tempojs/client",
+  "version": "0.0.1-alpha.10",
+  "description": "xrpc client",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@tempojs/common": "^0.0.1-alpha.10"
+  }
+}

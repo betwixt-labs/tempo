@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "target": "es2022",
+    "module": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "strict": true,
+    "alwaysStrict": true,    
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "resolveJsonModule": true,
+    "checkJs": false,
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false,
+    "isolatedModules": false,
+    "noImplicitAny": true,     
+    "strictNullChecks": true, 
+    "strictFunctionTypes": true,    
+    "strictBindCallApply": true,     
+    "strictPropertyInitialization": true,        
+    "noImplicitThis": true,     
+    "useUnknownInCatchVariables": true,   
+    "noUnusedLocals": true,         
+    "noUnusedParameters": true,   
+    "exactOptionalPropertyTypes": true, 
+    "noImplicitReturns": true,       
+    "noFallthroughCasesInSwitch": true,  
+    "noImplicitOverride": true,         
+    "noPropertyAccessFromIndexSignature": true, 
+    "noUncheckedIndexedAccess": true,    
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+  ],
+  "references": [
+    {
+      "path": "./packages/common"
+    },
+    {
+      "path": "./packages/client"
+    },
+    {
+      "path": "./packages/server"
+    }
+  ]
+}

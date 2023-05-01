@@ -1,0 +1,11 @@
+{
+    "inputFiles": [
+        "./shared/greeter.bop"
+      ],
+    "generators": [
+        {
+            "alias": "ts",
+            "outputFile": "./shared/index.ts"
+        }
+    ]
+}
