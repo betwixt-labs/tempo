@@ -42,7 +42,7 @@ Tempo allows you to easily build & consume low-latency, cross-platform, and full
 
 ### Features
 
-- 🧙‍♂️&nbsp; Full static typesafety & autocompletion on the client, for inputs, outputs, and errors.
+- 🧙‍♂️&nbsp; Full static typesafety & autocompletion on the client/server, for inputs, outputs, and errors.
 - 🐎&nbsp; Snappy DX - cross-platform code generation powered by [Bebop](https://github.com/betwixt-labs/bebop), no ceremony, or complex build pipelines.
 - 🍃&nbsp; Light - Tempo has zero deps and a tiny footprint on both the client and server.
 - 👀&nbsp; Check out the examples in the [./examples](./examples)-folder
