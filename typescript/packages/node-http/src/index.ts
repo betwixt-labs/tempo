@@ -1,3 +1,3 @@
-import { TempoRouter, TempoServerResponse } from './router';
+import { TempoRouter } from './router';
 
-export { TempoRouter, TempoServerResponse };
+export { TempoRouter };

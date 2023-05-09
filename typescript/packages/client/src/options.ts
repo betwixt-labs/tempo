@@ -18,7 +18,7 @@ export class TempoChannelOptions {
 	public contentType?: TempoContentType;
 
 	/**
-	 * The maximum size of the message that can be sent. Defaults to the value in `TempoChannel.defaultMaxReceiveMessageSize`.
+	 * The maximum size of the message that can be sent.
 	 */
 	public maxSendMessageSize?: number;
 

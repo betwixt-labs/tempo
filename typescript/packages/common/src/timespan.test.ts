@@ -2,7 +2,6 @@ import { describe, it, assert } from 'vitest';
 import { TimeSpan } from './timespan';
 
 describe('TimeSpan', () => {
-	console.log('Hello', TimeSpan.fromMinutes(192989.8).toString());
 	it('should create a TimeSpan from ticks', () => {
 		const ticks = 1234567890;
 		const ts = new TimeSpan(ticks);

@@ -4,7 +4,7 @@
 //
 //
 //       bebopc version:
-//           2.5.4
+//           2.6.2
 //
 //
 //       bebopc source:
@@ -15,7 +15,7 @@
 //     the code is regenerated.
 // </auto-generated>
 import { BebopView, BebopRuntimeError, BebopRecord } from "bebop";
-import { Metadata } from "@tempojs/common";
+import { Metadata, MethodType } from "@tempojs/common";
 import {  BaseClient, MethodInfo, CallOptions } from "@tempojs/client";
 import { ServiceRegistry, BaseService, ServerContext, BebopMethodAny, BebopMethod } from "@tempojs/server";
 
@@ -127,6 +127,9 @@ export class HelloResponse implements IHelloResponse {
 export abstract class BaseGreeterService extends BaseService {
   public static readonly serviceName = 'GreeterService';
   public abstract sayHello(record: IHelloRequest, context: ServerContext): Promise<IHelloResponse>;
+  public abstract sayHelloClient(records: () => AsyncGenerator<IHelloRequest, void, undefined>, context: ServerContext): Promise<IHelloResponse>;
+  public abstract sayHelloServer(record: IHelloRequest, context: ServerContext): AsyncGenerator<IHelloResponse, void, undefined>;
+  public abstract sayHelloDuplex(records: () => AsyncGenerator<IHelloRequest, void, undefined>, context: ServerContext): AsyncGenerator<IHelloResponse, void, undefined>;
 }
 
 export class TempoServiceRegistry extends ServiceRegistry {
@@ -169,6 +172,43 @@ export class TempoServiceRegistry extends ServiceRegistry {
       invoke: service.sayHello,
       serialize: HelloResponse.encode,
       deserialize: HelloRequest.decode,
+      type: MethodType.Unary,
+    } as BebopMethod<IHelloRequest, IHelloResponse>);
+    if (this.methods.has(3391540084)) {
+      const conflictService = this.methods.get(3391540084)!;
+      throw new Error(`GreeterService.sayHelloClient collides with ${conflictService.service}.${conflictService.name}`)
+    }
+    this.methods.set(3391540084, {
+      name: 'sayHelloClient',
+      service: serviceName,
+      invoke: service.sayHelloClient,
+      serialize: HelloResponse.encode,
+      deserialize: HelloRequest.decode,
+      type: MethodType.ClientStream,
+    } as BebopMethod<IHelloRequest, IHelloResponse>);
+    if (this.methods.has(838180561)) {
+      const conflictService = this.methods.get(838180561)!;
+      throw new Error(`GreeterService.sayHelloServer collides with ${conflictService.service}.${conflictService.name}`)
+    }
+    this.methods.set(838180561, {
+      name: 'sayHelloServer',
+      service: serviceName,
+      invoke: service.sayHelloServer,
+      serialize: HelloResponse.encode,
+      deserialize: HelloRequest.decode,
+      type: MethodType.ServerStream,
+    } as BebopMethod<IHelloRequest, IHelloResponse>);
+    if (this.methods.has(2725697664)) {
+      const conflictService = this.methods.get(2725697664)!;
+      throw new Error(`GreeterService.sayHelloDuplex collides with ${conflictService.service}.${conflictService.name}`)
+    }
+    this.methods.set(2725697664, {
+      name: 'sayHelloDuplex',
+      service: serviceName,
+      invoke: service.sayHelloDuplex,
+      serialize: HelloResponse.encode,
+      deserialize: HelloRequest.decode,
+      type: MethodType.DuplexStream,
     } as BebopMethod<IHelloRequest, IHelloResponse>);
   }
 
@@ -179,6 +219,12 @@ export class TempoServiceRegistry extends ServiceRegistry {
 export interface IGreeterClient {
   sayHello(request: IHelloRequest): Promise<IHelloResponse>;
   sayHello(request: IHelloRequest, metadata: Metadata): Promise<IHelloResponse>;
+  sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>): Promise<IHelloResponse>;
+  sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>, metadata: Metadata): Promise<IHelloResponse>;
+  sayHelloServer(request: IHelloRequest): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  sayHelloServer(request: IHelloRequest, metadata: Metadata): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>, metadata: Metadata): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
 }
 
 export class GreeterClient extends BaseClient implements IGreeterClient {
@@ -187,11 +233,51 @@ export class GreeterClient extends BaseClient implements IGreeterClient {
     service: 'GreeterService',
     id: 1225452181,
     serialize: HelloRequest.encode,
-    deserialize: HelloResponse.decode
+    deserialize: HelloResponse.decode,
+    type: MethodType.Unary,
   }
   async sayHello(request: IHelloRequest): Promise<IHelloResponse>;
   async sayHello(request: IHelloRequest, options: CallOptions): Promise<IHelloResponse>;
   async sayHello(request: IHelloRequest, options?: CallOptions): Promise<IHelloResponse> {
-    return await this.channel.send(request, this.getContext(), GreeterClient.sayHelloMethodInfo, options);
+    return await this.channel.startUnary(request, this.getContext(), GreeterClient.sayHelloMethodInfo, options);
+  }
+  private static readonly sayHelloClientMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
+    name: 'sayHelloClient',
+    service: 'GreeterService',
+    id: 3391540084,
+    serialize: HelloRequest.encode,
+    deserialize: HelloResponse.decode,
+    type: MethodType.ClientStream,
+  }
+  async sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>): Promise<IHelloResponse>;
+  async sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>, options: CallOptions): Promise<IHelloResponse>;
+  async sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>, options?: CallOptions): Promise<IHelloResponse> {
+    return await this.channel.startClientStream(request, this.getContext(), GreeterClient.sayHelloClientMethodInfo, options);
+  }
+  private static readonly sayHelloServerMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
+    name: 'sayHelloServer',
+    service: 'GreeterService',
+    id: 838180561,
+    serialize: HelloRequest.encode,
+    deserialize: HelloResponse.decode,
+    type: MethodType.ServerStream,
+  }
+  async sayHelloServer(request: IHelloRequest): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  async sayHelloServer(request: IHelloRequest, options: CallOptions): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  async sayHelloServer(request: IHelloRequest, options?: CallOptions): Promise<AsyncGenerator<IHelloResponse, void, undefined>> {
+    return await this.channel.startServerStream(request, this.getContext(), GreeterClient.sayHelloServerMethodInfo, options);
+  }
+  private static readonly sayHelloDuplexMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
+    name: 'sayHelloDuplex',
+    service: 'GreeterService',
+    id: 2725697664,
+    serialize: HelloRequest.encode,
+    deserialize: HelloResponse.decode,
+    type: MethodType.DuplexStream,
+  }
+  async sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  async sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>, options: CallOptions): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
+  async sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>, options?: CallOptions): Promise<AsyncGenerator<IHelloResponse, void, undefined>> {
+    return await this.channel.startDuplexStream(request, this.getContext(), GreeterClient.sayHelloDuplexMethodInfo, options);
   }
 }

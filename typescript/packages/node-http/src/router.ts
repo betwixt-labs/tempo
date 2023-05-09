@@ -1,6 +1,7 @@
 import {
 	Deadline,
 	Metadata,
+	MethodType,
 	TempoError,
 	TempoLogger,
 	TempoStatusCode,
@@ -10,103 +11,24 @@ import {
 import {
 	AuthInterceptor,
 	BaseRouter,
-	ObjectValidator,
 	ServiceRegistry,
 	TempoRouterConfiguration,
 	IncomingContext,
 	ServerContext,
+	BebopMethodAny,
 } from '@tempojs/server';
 import { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import { FetchHeadersAdapter } from './header';
+import { readTempoStream, writeTempoStream } from './helpers';
 
-/**
- * `TempoServerResponse` is an extension of the `ServerResponse` class
- * that adds a `body` property for storing response data and a `copyTo`
- * method for copying properties, headers, and body to another
- * `ServerResponse` object.
- *
- * @export
- * @class TempoServerResponse
- * @extends {ServerResponse}
- */
-export class TempoServerResponse extends ServerResponse {
-	/**
-	 * The response body as a Uint8Array.
-	 *
-	 * @type {Uint8Array}
-	 * @memberof TempoServerResponse
-	 */
-	public body?: Uint8Array;
-
-	/**
-	 * Creates an instance of TempoServerResponse.
-	 *
-	 * @param {IncomingMessage} request - The incoming request to be associated with the response.
-	 * @memberof TempoServerResponse
-	 */
-	constructor(request: IncomingMessage) {
-		super(request);
-	}
-
-	/**
-	 * Sets the response body.
-	 *
-	 * @param {Uint8Array} body - The response body as a Uint8Array.
-	 * @memberof TempoServerResponse
-	 */
-	setBody(body: Uint8Array): void {
-		this.body = body;
-	}
-
-	/**
-	 * Copies the status code, headers, and body (if present) from this
-	 * TempoServerResponse object to another ServerResponse object.
-	 *
-	 * @param {ServerResponse} res - The target ServerResponse object.
-	 * @returns {ServerResponse} The target ServerResponse object with the copied properties.
-	 * @memberof TempoServerResponse
-	 */
-	copyTo(res: ServerResponse): ServerResponse {
-		// Set the status code
-		res.statusCode = this.statusCode;
-
-		// Copy the headers
-		const headers = this.getHeaders();
-		for (const [key, value] of Object.entries(headers)) {
-			res.setHeader(key, value as string);
-		}
-
-		// Write the body if present
-		if (this.body) {
-			res.write(this.body);
-		}
-		return res;
-	}
-}
-
-export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoServerResponse> {
-	private readonly corsEnabled: boolean;
-	private readonly allowedCorsOrigins: string[] | undefined;
-	private readonly transmitInternalErrors: boolean;
-
+export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerResponse> {
 	constructor(
 		logger: TempoLogger,
 		registry: ServiceRegistry,
-		configuration: TempoRouterConfiguration = { enableObjectValidation: false },
+		configuration: TempoRouterConfiguration = new TempoRouterConfiguration(),
 		authInterceptor?: AuthInterceptor,
 	) {
-		super(logger, registry, authInterceptor);
-		if (configuration.enableObjectValidation) {
-			this.validators.set('object', new ObjectValidator(logger));
-		}
-		if (configuration.validators) {
-			for (const [name, validator] of configuration.validators) {
-				this.validators.set(name, validator);
-			}
-		}
-		this.corsEnabled = configuration.enableCors ??= false;
-		this.allowedCorsOrigins = configuration.allowedOrigins;
-		this.transmitInternalErrors = configuration.transmitInternalErrors ??= false;
+		super(logger, registry, configuration, authInterceptor);
 	}
 
 	/**
@@ -121,7 +43,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 		return new FetchHeadersAdapter(headers);
 	}
 
-	setCorsHeaders(headers: OutgoingHttpHeaders, origin: string): void {
+	private setCorsHeaders(headers: OutgoingHttpHeaders, origin: string): void {
 		if (this.corsEnabled) {
 			if (this.allowedCorsOrigins !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
@@ -138,12 +60,11 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 			'Content-Encoding, Content-Length, Content-Type, tempo-status, tempo-message, custom-metadata, tempo-credentials';
 	}
 
-	private prepareOptionsResponse(request: IncomingMessage): TempoServerResponse {
+	private prepareOptionsResponse(request: IncomingMessage, response: ServerResponse): void {
 		const origin = request.headers.origin;
 		const preFlightRequestHeaders = request.headers['access-control-request-headers'];
 
 		// Initialize a new ServerResponse
-		const response = new TempoServerResponse(request);
 		let statusCode: number;
 		let headers: OutgoingHttpHeaders;
 
@@ -185,14 +106,122 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 		for (const [key, value] of Object.entries(headers)) {
 			response.setHeader(key, value as string);
 		}
-
-		return response;
 	}
 
-	override async handle(request: IncomingMessage, env: TEnv): Promise<TempoServerResponse> {
+	private async setAuthContext(request: IncomingMessage, context: ServerContext): Promise<void> {
+		const authHeader = request.headers.authorization;
+		if (authHeader !== undefined && this.authInterceptor !== undefined) {
+			const authContext = await this.authInterceptor.intercept(context, authHeader);
+			context.setAuthContext(authContext);
+		}
+	}
+
+	private async invokeUnaryMethod(
+		request: IncomingMessage,
+		context: ServerContext,
+		method: BebopMethodAny,
+		contentType: string,
+	): Promise<any> {
+		await this.setAuthContext(request, context);
+		const requestData = new Uint8Array(
+			await new Promise<Buffer>((resolve, reject) => {
+				const chunks: Buffer[] = [];
+				request.on('data', (chunk: Buffer) => chunks.push(chunk));
+				request.on('end', () => resolve(Buffer.concat(chunks)));
+				request.on('error', (err) => reject(err));
+			}),
+		);
+		if (requestData.length > this.maxReceiveMessageSize) {
+			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
+		}
+		const record = this.deserializeRecord(method, requestData, contentType);
+		return await method.invoke(record, context);
+	}
+
+	private async invokeClientStreamMethod(
+		request: IncomingMessage,
+		context: ServerContext,
+		method: BebopMethodAny,
+		contentType: string,
+	): Promise<any> {
+		await this.setAuthContext(request, context);
+		if (!request.readable) {
+			throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'invalid request: not readable');
+		}
+		const generator = () => {
+			return readTempoStream(
+				request,
+				(data: Uint8Array) => {
+					if (data.length > this.maxReceiveMessageSize) {
+						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
+					}
+					return this.deserializeRecord(method, data, contentType);
+				},
+				context.clientDeadline(),
+			);
+		};
+		return await method.invoke(generator, context);
+	}
+
+	private async invokeServerStreamMethod(
+		request: IncomingMessage,
+		context: ServerContext,
+		method: BebopMethodAny,
+		contentType: string,
+	): Promise<AsyncGenerator<any, void, unknown>> {
+		await this.setAuthContext(request, context);
+		const requestData = new Uint8Array(
+			await new Promise<Buffer>((resolve, reject) => {
+				const chunks: Buffer[] = [];
+				request.on('data', (chunk: Buffer) => chunks.push(chunk));
+				request.on('end', () => resolve(Buffer.concat(chunks)));
+				request.on('error', (err) => reject(err));
+			}),
+		);
+		if (requestData.length > this.maxReceiveMessageSize) {
+			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
+		}
+		const record = this.deserializeRecord(method, requestData, contentType);
+		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
+			throw new TempoError(TempoStatusCode.INTERNAL, 'service method incorrect: method must be async generator');
+		}
+		return method.invoke(record, context);
+	}
+
+	private async invokeDuplexStreamMethod(
+		request: IncomingMessage,
+		context: ServerContext,
+		method: BebopMethodAny,
+		contentType: string,
+	): Promise<AsyncGenerator<any, void, unknown>> {
+		await this.setAuthContext(request, context);
+		if (!request.readable) {
+			throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'invalid request: not readable');
+		}
+		const generator = () => {
+			return readTempoStream(
+				request,
+				(data: Uint8Array) => {
+					if (data.length > this.maxReceiveMessageSize) {
+						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
+					}
+					return this.deserializeRecord(method, data, contentType);
+				},
+				context.clientDeadline(),
+			);
+		};
+		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
+			throw new TempoError(TempoStatusCode.INTERNAL, 'service method incorrect: method must be async generator');
+		}
+		return method.invoke(generator, context);
+	}
+
+	public override async process(request: IncomingMessage, response: ServerResponse, env: TEnv) {
 		// Check if the request is an OPTIONS request
+
 		if (request.method === 'OPTIONS') {
-			return this.prepareOptionsResponse(request);
+			this.prepareOptionsResponse(request, response);
+			return;
 		}
 		const origin = request.headers.origin;
 		try {
@@ -215,29 +244,12 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 			const metadata =
 				metadataHeader && typeof metadataHeader === 'string' ? this.getCustomMetaData(metadataHeader) : new Metadata();
 
-			// Collect request data
-			const requestData = new Uint8Array(
-				await new Promise<Buffer>((resolve, reject) => {
-					const chunks: Buffer[] = [];
-					request.on('data', (chunk: Buffer) => chunks.push(chunk));
-					request.on('end', () => resolve(Buffer.concat(chunks)));
-					request.on('error', (err) => reject(err));
-				}),
-			);
-			let requestBody: any;
-			switch (contentType) {
-				case 'json':
-					requestBody = JSON.parse(TempoUtil.textDecoder.decode(requestData));
-					break;
-				case 'bebop':
-					requestBody = method.deserialize(requestData);
-					break;
-				default:
-					throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${contentType}`);
-			}
-			const objectValidator = this.validators.get('object') as ObjectValidator;
-			if (objectValidator && !objectValidator.sanitize(requestBody)) {
-				throw new TempoError(TempoStatusCode.FAILED_PRECONDITION, 'request data failed to be sanitized');
+			const previousAttempts = metadata.get('tempo-previous-rpc-attempts');
+			if (previousAttempts !== undefined && previousAttempts[0] !== undefined) {
+				const numberOfAttempts = TempoUtil.tryParseInt(previousAttempts[0]);
+				if (numberOfAttempts > this.maxRetryAttempts) {
+					throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'max retry attempts exceeded');
+				}
 			}
 
 			let deadline: Deadline | undefined;
@@ -262,39 +274,26 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 					metadata: outgoingMetadata,
 				},
 				env,
-				this.validators,
 			);
 
 			const handleRequest = async () => {
-				const authHeader = request.headers.authorization;
-				if (authHeader !== undefined && this.authInterceptor !== undefined) {
-					const authContext = await this.authInterceptor.intercept(context, authHeader);
-					context.setAuthContext(authContext);
+				let recordGenerator: any | undefined = undefined;
+				let record: any | undefined;
+				if (method.type === MethodType.Unary) {
+					record = await this.invokeUnaryMethod(request, context, method, contentType);
+				} else if (method.type === MethodType.ClientStream) {
+					record = await this.invokeClientStreamMethod(request, context, method, contentType);
+				} else if (method.type === MethodType.ServerStream) {
+					recordGenerator = await this.invokeServerStreamMethod(request, context, method, contentType);
+				} else if (method.type === MethodType.DuplexStream) {
+					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method, contentType);
 				}
-
-				const result = await method.invoke(requestBody, context);
 				// it is now safe to begin work on the response
 				outgoingMetadata.freeze();
-				let responseData: Uint8Array;
-				switch (contentType) {
-					case 'json':
-						responseData = TempoUtil.textEncoder.encode(result);
-						break;
-					case 'bebop':
-						responseData = method.serialize(result);
-						break;
-					default:
-						throw new TempoError(
-							TempoStatusCode.UNKNOWN_CONTENT_TYPE,
-							`invalid request: unknown format ${contentType}`,
-						);
-				}
-
 				const responseHeaders: OutgoingHttpHeaders = {};
 				if (origin !== undefined) {
 					this.setCorsHeaders(responseHeaders, origin);
 				}
-				responseHeaders['content-length'] = String(responseData.length);
 				responseHeaders['content-type'] = `application/tempo+${contentType}`;
 				if (outgoingMetadata.size() > 0) {
 					responseHeaders['custom-metadata'] = outgoingMetadata.toHttpHeader();
@@ -303,22 +302,35 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 				if (outgoingCredentials) {
 					responseHeaders['tempo-credentials'] = stringifyCredentials(outgoingCredentials);
 				}
-
 				responseHeaders['tempo-status'] = '0';
 				responseHeaders['tempo-message'] = 'OK';
-				const response = new TempoServerResponse(request);
 				response.statusCode = 200;
 				// Set the headers
 				for (const [key, value] of Object.entries(responseHeaders)) {
 					response.setHeader(key, value as string);
 				}
-				response.setBody(responseData);
-				//response.write(responseData);
-
-				return response;
+				if (recordGenerator !== undefined) {
+					writeTempoStream(
+						response,
+						() => recordGenerator,
+						(payload: any) => {
+							const data = this.serializeRecord(method, payload, contentType);
+							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
+								throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
+							}
+							return this.serializeRecord(method, payload, contentType);
+						},
+						context.clientDeadline(),
+					);
+				} else {
+					const responseData = this.serializeRecord(method, record, contentType);
+					if (method.type === MethodType.Unary || method.type === MethodType.ClientStream) {
+						response.setHeader('content-length', String(responseData.length));
+					}
+					response.end(responseData);
+				}
 			};
-
-			return deadline !== undefined ? await deadline.executeWithinDeadline(handleRequest) : await handleRequest();
+			deadline !== undefined ? await deadline.executeWithinDeadline(handleRequest) : await handleRequest();
 		} catch (e) {
 			let status = TempoStatusCode.UNKNOWN;
 			let message = 'unknown error';
@@ -344,13 +356,14 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, TempoSe
 			if (origin !== undefined) {
 				this.setCorsHeaders(responseHeaders, origin);
 			}
-
-			const response = new TempoServerResponse(request);
 			response.statusCode = TempoError.codeToHttpStatus(status);
 			for (const [key, value] of Object.entries(responseHeaders)) {
 				response.setHeader(key, value as string);
 			}
-			return response;
 		}
+	}
+
+	override handle(_request: IncomingMessage, _env: TEnv): Promise<ServerResponse> {
+		throw new Error('Method not implemented.');
 	}
 }

@@ -1,14 +1,3 @@
-// Check if 'require' is defined, indicating a Node.js environment.
-if (typeof require !== 'undefined') {
-	// If 'TextDecoder' is not defined in the global scope, require it from the 'util' module and assign it to the global scope.
-	if (typeof TextDecoder === 'undefined' && typeof TextEncoder === 'undefined') {
-		import('util').then((util) => {
-			(global as any).TextDecoder = util.TextDecoder;
-			(global as any).TextEncoder = util.TextEncoder;
-		});
-	}
-}
-
 /**
  * Parses a string into an int. Throws an error if the string is not a valid int.
  * @param value - the string to parse
@@ -20,6 +9,29 @@ const tryParseInt = (value: string): number => {
 		throw new Error(`Invalid int: ${value}`);
 	}
 	return num;
+};
+
+/**
+ * Determines if the given object is an AsyncGeneratorFunction.
+ *
+ * @template T - The type of values yielded by the AsyncGenerator.
+ * @param obj - The object to be checked for being an AsyncGeneratorFunction.
+ * @returns A boolean value that indicates whether the given object is an AsyncGeneratorFunction or not.
+ *
+ * @example
+ * ```
+ * const asyncGenerator = async function*() { yield 1; };
+ * const isAsyncGen = isAsyncGeneratorFunction<number>(asyncGenerator);
+ * console.log(isAsyncGen); // true
+ * ```
+ */
+const isAsyncGeneratorFunction = <T>(obj: any): obj is AsyncGenerator<T, void, undefined> => {
+	return (
+		obj !== undefined &&
+		typeof obj === 'function' &&
+		obj.constructor &&
+		obj.constructor.name === 'AsyncGeneratorFunction'
+	);
 };
 
 // Instantiate a new 'TextEncoder' and export it.
@@ -145,4 +157,19 @@ export const TempoUtil = {
 	 * Gets the name of the current JavaScript runtime environment.
 	 */
 	getEnvironmentName,
+	/**
+	 * Determines if the given object is an AsyncGeneratorFunction.
+	 *
+	 * @template T - The type of values yielded by the AsyncGenerator.
+	 * @param obj - The object to be checked for being an AsyncGeneratorFunction.
+	 * @returns A boolean value that indicates whether the given object is an AsyncGeneratorFunction or not.
+	 *
+	 * @example
+	 * ```
+	 * const asyncGenerator = async function*() { yield 1; };
+	 * const isAsyncGen = isAsyncGeneratorFunction<number>(asyncGenerator);
+	 * console.log(isAsyncGen); // true
+	 * ```
+	 */
+	isAsyncGeneratorFunction,
 };

@@ -26,4 +26,7 @@ service Greeter {
      * `sayHello` is a method that takes a `HelloRequest` and returns a `HelloResponse`.
      */
     sayHello(HelloRequest): HelloResponse;
+    sayHelloClient(stream HelloRequest): HelloResponse;
+    sayHelloServer(HelloRequest): stream HelloResponse;
+    sayHelloDuplex(stream HelloRequest): stream HelloResponse;
 }

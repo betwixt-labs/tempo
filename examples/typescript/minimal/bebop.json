@@ -2,10 +2,13 @@
     "inputFiles": [
         "./shared/greeter.bop"
       ],
+      "exclude": [
+        "node_modules"
+      ],
     "generators": [
         {
             "alias": "ts",
-            "outputFile": "./shared/index.ts"
+            "outFile": "./shared/index.ts"
         }
     ]
 }

@@ -1,3 +1,4 @@
+import { MethodType } from '@tempojs/common';
 import { BebopRecord } from 'bebop';
 
 /**
@@ -34,4 +35,9 @@ export interface MethodInfo<TRequest extends BebopRecord, TResponse extends Bebo
 	 * @returns The deserialized response object.
 	 */
 	deserialize(data: Uint8Array): TResponse;
+
+	/**
+	 * The type of the method.
+	 */
+	type: MethodType;
 }

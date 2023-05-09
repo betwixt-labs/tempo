@@ -1,5 +1,4 @@
 import { Deadline, Metadata, Credentials } from '@tempojs/common';
-import { Validator } from './validator';
 import { AuthContext } from './auth';
 
 /**
@@ -54,7 +53,6 @@ export class ServerContext {
 		private incomingContext: IncomingContext,
 		private outgoingContext: OutgoingContext,
 		public environment: any,
-		private validators?: Map<string, Validator>,
 	) {}
 
 	/**
@@ -83,23 +81,6 @@ export class ServerContext {
 		return this.authContext;
 	}
 
-	/**
-	 * Retrieves a Validator instance by its name, if it exists in the validators map.
-	 *
-	 * @template TValidator - The type of the desired Validator instance.
-	 * @param name - The name of the Validator instance to retrieve.
-	 * @returns The Validator instance of the specified type, or undefined if it is not found in the validators map.
-	 */
-	public getValidator<TValidator extends Validator>(name: string): TValidator | undefined {
-		if (this.validators) {
-			const validator = this.validators.get(name);
-			if (validator) {
-				return validator as TValidator;
-			}
-		}
-		return undefined;
-	}
-
 	freeze(): void {
 		this.outgoingContext.metadata.freeze();
 	}
@@ -120,6 +101,13 @@ export class ServerContext {
 	 */
 	clientMetadata(): Metadata | undefined {
 		return this.incomingContext.metadata;
+	}
+	/**
+	 * Retrieves the deadline of the client that initiated the Tempo server call.
+	 * @returns {Deadline} - The deadline of the client that initiated the Tempo server call.
+	 */
+	clientDeadline(): Deadline | undefined {
+		return this.incomingContext.deadline;
 	}
 
 	/**
