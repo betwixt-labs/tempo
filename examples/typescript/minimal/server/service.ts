@@ -39,6 +39,7 @@ export class GreeterService extends BaseGreeterService {
     context: ServerContext
   ): Promise<IHelloResponse> {
     let count = 0;
+   
     for await (const _ of records()) {
       count++;
     }
