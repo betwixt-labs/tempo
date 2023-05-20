@@ -21,7 +21,7 @@
   <br />
   <br />
   <figure>
-  <a href="https://replit.com/@andrewmd5/Tempo-Minimal-Example?v=1">
+  <a href="https://replit.com/@andrewmd5/Tempo-Minimal-Example">
     <img src="./assets/demo.gif" alt="Demo" />
        </a>
     <figcaption>
