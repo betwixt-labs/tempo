@@ -21,7 +21,7 @@
   <br />
   <br />
   <figure>
-  <a href="https://stackblitz.com/edit/node-tempo?file=README.md">
+  <a href="https://replit.com/@andrewmd5/Tempo-Minimal-Example?v=1">
     <img src="./assets/demo.gif" alt="Demo" />
        </a>
     <figcaption>
