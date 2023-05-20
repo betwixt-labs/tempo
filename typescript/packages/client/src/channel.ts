@@ -146,6 +146,43 @@ export abstract class BaseChannel {
 }
 
 /**
+ * A function that checks if the current execution environment supports request streams.
+ *
+ * This function immediately invokes an IIFE (Immediately Invoked Function Expression) to check
+ * whether the current environment supports creating Request objects with a ReadableStream as the body.
+ *
+ * The check is done by trying to create a new Request object with a ReadableStream as the body.
+ * If the creation is successful and 'Content-Type' header doesn't exist in the created Request object,
+ * and also 'duplex' property has been accessed during the Request object creation, it means the environment
+ * supports request streams and the function returns true.
+ *
+ * If the current environment is either a browser or a web worker, and does not satisfy the conditions mentioned above,
+ * the function will return false.
+ *
+ * If the current environment is neither a browser nor a web worker, the function assumes that it supports request streams
+ * and returns true.
+ *
+ * @returns {boolean} Returns true if the current execution environment supports request streams, otherwise false.
+ */
+const supportsRequestStreams = (() => {
+	if (ExecutionEnvironment.isBrowser || ExecutionEnvironment.isWebWorker) {
+		let duplexAccessed = false;
+		const hasContentType = new Request('', {
+			body: new ReadableStream(),
+			method: 'POST',
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			//@ts-ignore
+			get duplex() {
+				duplexAccessed = true;
+				return 'half';
+			},
+		}).headers.has('Content-Type');
+		return duplexAccessed && !hasContentType;
+	}
+	return true;
+})();
+
+/**
  * Represents a Tempo channel for communication with a remote server.
  */
 export class TempoChannel extends BaseChannel {
@@ -535,6 +572,9 @@ export class TempoChannel extends BaseChannel {
 		method: MethodInfo<TRequest, TResponse>,
 		options?: CallOptions | undefined,
 	): Promise<TResponse> {
+		if (!supportsRequestStreams) {
+			throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
+		}
 		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 		tempoStream.writeTempoStream(
 			transformStream.writable,
@@ -632,6 +672,9 @@ export class TempoChannel extends BaseChannel {
 		method: MethodInfo<TRequest, TResponse>,
 		options?: CallOptions | undefined,
 	): Promise<AsyncGenerator<TResponse, void, undefined>> {
+		if (!supportsRequestStreams) {
+			throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
+		}
 		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 		tempoStream.writeTempoStream(
 			transformStream.writable,

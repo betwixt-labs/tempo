@@ -99,7 +99,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			headers = {
 				Allow: 'POST, OPTIONS',
 			};
-			
 		}
 
 		response.statusCode = statusCode;
