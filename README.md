@@ -7,7 +7,7 @@
 
 <div align="center">
   <h1>Tempo</h1>
-   <h3>Don't miss a beat.<br/>Low latency, cross-platform, end-to-end typesafe APIs.</h3>
+   <h3>Don't miss a beat.<br/>Efficient, end-to-end typesafe APIs.</h3>
   <a href="https://github.com/betwixt-labs/tempo/blob/main/LICENSE">
     <img alt="Apache License" src="https://img.shields.io/github/license/betwixt-labs/tempo" />
   </a>
@@ -47,6 +47,7 @@ Tempo allows you to easily build & consume low-latency, cross-platform, and full
 - 🍃&nbsp; Light - Tempo has zero deps and a tiny footprint on both the client and server.
 - 👀&nbsp; Check out the examples in the [./examples](./examples)-folder
 - 🌗&nbsp; Opinionated - the Tempo abstraction allows you to write the same code in any language.
+- ☁️&nbsp; Runs everywhere - browsers, serverless platforms, and on bare metal.
 
 **👉 For more information check out the [wiki](https://github.com/betwixt-labs/tempo/wiki). 👈**
 
