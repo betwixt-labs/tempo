@@ -194,31 +194,31 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@tempojs/client@^0.0.1-alpha.10":
-  version "0.0.1-alpha.10"
-  resolved "https://registry.yarnpkg.com/@tempojs/client/-/client-0.0.1-alpha.10.tgz#b2757f8dae469f61650fed21630092e31325a8ac"
-  integrity sha512-Q/OsKABRTtejSTtFVmpHFc0CpKwCs1lhdXSV49oRLU2d391MABueVeqicRcCzk7iMxTMbqx1Vg3G6T5/dyih7g==
+"@tempojs/client@^0.0.1-alpha.19":
+  version "0.0.1-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tempojs/client/-/client-0.0.1-alpha.19.tgz#6a020f94c409e9b821e95a23e50e91f3fe743be7"
+  integrity sha512-DdQ9rDhO5nEVvNsQOiO0mhEoXFM0GI7dQTsPkk9z91s9JTEy85E2CywgHPSdvMjHWR5ltWRJDGLotVcWvzypPA==
   dependencies:
-    "@tempojs/common" "^0.0.1-alpha.10"
+    "@tempojs/common" "^0.0.1-alpha.19"
 
-"@tempojs/common@^0.0.1-alpha.10":
-  version "0.0.1-alpha.10"
-  resolved "https://registry.yarnpkg.com/@tempojs/common/-/common-0.0.1-alpha.10.tgz#a9854b3b03b533f72b4db4c79d99ba1e2d42fef5"
-  integrity sha512-RSS3ejDK25He7BXZBGCuXNHpFc5L12YR3Z0zeORnUBzpoSKSDZJfSdhTEfmDDY5hYa2H5UjpK56WHKJqr0Xzow==
+"@tempojs/common@^0.0.1-alpha.19":
+  version "0.0.1-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tempojs/common/-/common-0.0.1-alpha.19.tgz#8a8dcf3bf5993dad5ad995097c36926b2fab9326"
+  integrity sha512-ABF++/t/H446P+TtJboXSFlvVYPlkjH5diele4t0c2YxudAvX8FQN2E4YWh5rBn30T3INP/ygiF7bjalsoOt8w==
 
-"@tempojs/node-http-router@^0.0.1-alpha.10":
-  version "0.0.1-alpha.10"
-  resolved "https://registry.yarnpkg.com/@tempojs/node-http-router/-/node-http-router-0.0.1-alpha.10.tgz#434a2437ce21e7175367165fc5b3320640c288e5"
-  integrity sha512-bRuz3NS8YX7tcnieg22nv5rcFsUZl6bkkMPaWaTKzirIsqzzcIgeUp+uioR9NHRiTg9Ai+08ifFlw1j1amKJ5A==
+"@tempojs/node-http-router@^0.0.1-alpha.19":
+  version "0.0.1-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tempojs/node-http-router/-/node-http-router-0.0.1-alpha.19.tgz#97de2af455e633a6d7b4df53d96edcdcb833d0c2"
+  integrity sha512-L4LSmYYWZZH5nDGRtkPwlaRHSkDU+HEtCf404qc3atQgy63teP6jdk6cbPhcQArFcyMiCMJSkWt9uOIZDn96wA==
   dependencies:
-    "@tempojs/server" "^0.0.1-alpha.10"
+    "@tempojs/server" "^0.0.1-alpha.19"
 
-"@tempojs/server@^0.0.1-alpha.10":
-  version "0.0.1-alpha.10"
-  resolved "https://registry.yarnpkg.com/@tempojs/server/-/server-0.0.1-alpha.10.tgz#bce4eddffd6c26a17604e8bbf0988abda84b3316"
-  integrity sha512-eG9fil8lKEdilMuB7qLDtS9I6g83OHgEWsRAiIsoOnlim9nJBol3sdVGVSef8qytgH/jCp18kffxT5ikfhfYIw==
+"@tempojs/server@^0.0.1-alpha.19":
+  version "0.0.1-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tempojs/server/-/server-0.0.1-alpha.19.tgz#f64e46ebf654c1955e43abefe1d98f15638c4dd5"
+  integrity sha512-wU9FlNiML1D7ap54zJqOUBx2h6lkICRP8/rLNHzKAyv8PsMS1wXvsNzn8SdNxx5opF2TIeoew25GFd2u+fmRsg==
   dependencies:
-    "@tempojs/common" "^0.0.1-alpha.10"
+    "@tempojs/common" "^0.0.1-alpha.19"
 
 "@types/node@^14.14.10", "@types/node@^14.14.7":
   version "14.18.43"
@@ -260,17 +260,17 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-bebop-tools@^2.5.4:
-  version "2.5.4"
-  resolved "https://registry.yarnpkg.com/bebop-tools/-/bebop-tools-2.5.4.tgz#e87bbd9cdad45075402c958596491df59415b121"
-  integrity sha512-UMnQUdBq+HnvRwkyISSCeqfb793KP6H0+dRvKdyw8yQGdRpmyu7/UHj82gA4XhwAxSFTu22bY0iS1AwkslHkSQ==
+bebop-tools@^2.6.2:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/bebop-tools/-/bebop-tools-2.6.2.tgz#22c17589acc51173098ada088bb35f771992ef7e"
+  integrity sha512-PlOI9WhKxExVXQXbgoNZQuwYAwA3GNaQyr8ai3rbaDAR8ALldZi5X65ME9TL0IZzSX3abCr+HUjpedi3Drd6Tg==
   dependencies:
     "@types/node" "^14.14.10"
 
-bebop@^2.5.4:
-  version "2.5.4"
-  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.5.4.tgz#45471c6e463613f45ae0f291ce907d00f4ba4096"
-  integrity sha512-oDFelKXRXYWZILd/OJRgtDeLiSXuPURHWAkVBP8/WEx1rrxEGITinDWH2R72v4kLodhYuwcD26TgKzRQWZ98ng==
+bebop@^2.6.2:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.6.2.tgz#8619b09da84074e72dfc25ac3972f01ec6109831"
+  integrity sha512-NdZvJJw1B9UOSa6kSSa4qEZ0oFp9VgboY0Msekn0sNRpd+5PDeVLdlyB2HVyJ8vGGIPqMNfEAllIHJKiV7Zmhg==
   dependencies:
     "@types/node" "^14.14.7"
 

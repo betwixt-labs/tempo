@@ -84,17 +84,13 @@ for PACKAGE_JSON in $PACKAGE_JSON_FILES; do
 done
 
 COMMON_VERSION_FILE="./packages/common/src/version.ts"
-# Replace the TempoVersion string with the new version
-awk -v version="$VERSION" '
-  /export const TempoVersion =/ {
-    sub(/".*"/, "\"" version "\"")
-  }
-  1' $COMMON_VERSION_FILE >constants.tmp
-
-# Replace the original file with the updated file
-mv constants.tmp $COMMON_VERSION_FILE
+echo "export const TempoVersion = '$VERSION';" > $COMMON_VERSION_FILE
 
 echo "All package versions and '@tempojs' dependencies have been updated to $VERSION."
+
+# Test
+
+yarn vitest run
 
 # Build and pack the 'common' package.
 build ./packages/common

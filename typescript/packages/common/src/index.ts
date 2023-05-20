@@ -6,6 +6,7 @@ import { Metadata } from './metadata';
 import { TimeSpan } from './timespan';
 import { TempoUtil, ExecutionEnvironment } from './utils';
 import { TempoVersion } from './version';
+import * as tempoStream from './stream';
 import {
 	Credentials,
 	parseCredentials,
@@ -13,6 +14,7 @@ import {
 	CredentialPrimitiveValue,
 	CredentialValue,
 } from './credentials';
+import { MethodType } from './flags';
 
 /**
  * Represents the possible content types used for encoding and decoding messages.
@@ -36,4 +38,6 @@ export {
 	stringifyCredentials,
 	ExecutionEnvironment,
 	TempoVersion,
+	tempoStream,
+	MethodType,
 };

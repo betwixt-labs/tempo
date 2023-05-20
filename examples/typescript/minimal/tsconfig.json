@@ -4,6 +4,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "jsx": "react",
     "strict": true,
     "outDir": "dist",
     "experimentalDecorators": true,

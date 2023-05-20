@@ -1,6 +1,6 @@
 {
   "name": "tempojs",
-  "version": "0.0.1-alpha.10",
+  "version": "0.0.1-alpha.19",
   "description": "something",
   "private": true,
   "workspaces": [
@@ -17,16 +17,18 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
+    "benny": "^3.7.1",
     "eslint": "^8.28.0",
     "prettier": "^2.8.0",
+    "ts-node": "^10.9.1",
     "tsup": "^6.7.0",
     "typescript": "^5.0.4",
     "vitest": "^0.30.1"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.1-alpha.10",
-    "@tempojs/common": "^0.0.1-alpha.10",
-    "@tempojs/server": "^0.0.1-alpha.10",
-    "bebop": "^2.5.1"
+    "@tempojs/client": "^0.0.1-alpha.19",
+    "@tempojs/common": "^0.0.1-alpha.19",
+    "@tempojs/server": "^0.0.1-alpha.19",
+    "bebop": "^2.6.2"
   }
 }
