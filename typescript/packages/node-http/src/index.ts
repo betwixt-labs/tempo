@@ -1,3 +1,4 @@
 import { TempoRouter } from './router';
+import { TempoRouterConfiguration } from '@tempojs/server';
 
-export { TempoRouter };
+export { TempoRouter, TempoRouterConfiguration };

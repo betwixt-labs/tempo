@@ -99,6 +99,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			headers = {
 				Allow: 'POST, OPTIONS',
 			};
+			
 		}
 
 		response.statusCode = statusCode;
@@ -221,6 +222,8 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 
 		if (request.method === 'OPTIONS') {
 			this.prepareOptionsResponse(request, response);
+			response.flushHeaders();
+			response.end();
 			return;
 		}
 		const origin = request.headers.origin;

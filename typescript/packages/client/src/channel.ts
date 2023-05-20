@@ -388,14 +388,7 @@ export class TempoChannel extends BaseChannel {
 			body: payload,
 			headers: headers,
 		};
-		// avoids a type-error in node
-		if (ExecutionEnvironment.isBrowser || ExecutionEnvironment.isWebWorker) {
-			requestInit.keepalive = true;
-		} else if (ExecutionEnvironment.isNode) {
-			// add duplex mode to node-fetch for streaming
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(requestInit as any).duplex = 'half';
-		}
+		(requestInit as any).duplex = 'half';
 		// Add AbortSignal if available
 		if (options?.controller) {
 			requestInit.signal = options.controller.signal;
