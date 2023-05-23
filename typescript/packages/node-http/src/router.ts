@@ -20,6 +20,7 @@ import {
 import { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import { FetchHeadersAdapter } from './header';
 import { readTempoStream, writeTempoStream } from './helpers';
+import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerResponse> {
 	constructor(
@@ -120,7 +121,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		request: IncomingMessage,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<any> {
 		await this.setAuthContext(request, context);
 		const requestData = new Uint8Array(
@@ -134,7 +134,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 		}
-		const record = this.deserializeRecord(method, requestData, contentType);
+		const record = method.deserialize(requestData);
 		return await method.invoke(record, context);
 	}
 
@@ -142,7 +142,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		request: IncomingMessage,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<any> {
 		await this.setAuthContext(request, context);
 		if (!request.readable) {
@@ -155,7 +154,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return this.deserializeRecord(method, data, contentType);
+					return method.deserialize(data);
 				},
 				context.clientDeadline(),
 			);
@@ -167,7 +166,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		request: IncomingMessage,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
 		const requestData = new Uint8Array(
@@ -181,7 +179,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 		}
-		const record = this.deserializeRecord(method, requestData, contentType);
+		const record = method.deserialize(requestData);
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
 			throw new TempoError(TempoStatusCode.INTERNAL, 'service method incorrect: method must be async generator');
 		}
@@ -192,7 +190,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		request: IncomingMessage,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
 		if (!request.readable) {
@@ -205,7 +202,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return this.deserializeRecord(method, data, contentType);
+					return method.deserialize(data);
 				},
 				context.clientDeadline(),
 			);
@@ -279,16 +276,16 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			);
 
 			const handleRequest = async () => {
-				let recordGenerator: any | undefined = undefined;
-				let record: any | undefined;
+				let recordGenerator: AsyncGenerator<BebopRecord, void, undefined> | undefined = undefined;
+				let record: BebopRecord | undefined;
 				if (method.type === MethodType.Unary) {
-					record = await this.invokeUnaryMethod(request, context, method, contentType);
+					record = await this.invokeUnaryMethod(request, context, method);
 				} else if (method.type === MethodType.ClientStream) {
-					record = await this.invokeClientStreamMethod(request, context, method, contentType);
+					record = await this.invokeClientStreamMethod(request, context, method);
 				} else if (method.type === MethodType.ServerStream) {
-					recordGenerator = await this.invokeServerStreamMethod(request, context, method, contentType);
+					recordGenerator = await this.invokeServerStreamMethod(request, context, method);
 				} else if (method.type === MethodType.DuplexStream) {
-					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method, contentType);
+					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
 				// it is now safe to begin work on the response
 				outgoingMetadata.freeze();
@@ -314,18 +311,18 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 				if (recordGenerator !== undefined) {
 					writeTempoStream(
 						response,
-						() => recordGenerator,
-						(payload: any) => {
-							const data = this.serializeRecord(method, payload, contentType);
+						recordGenerator,
+						(payload: BebopRecord) => {
+							const data = method.serialize(payload);
 							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
 								throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
 							}
-							return this.serializeRecord(method, payload, contentType);
+							return data;
 						},
 						context.clientDeadline(),
 					);
 				} else {
-					const responseData = this.serializeRecord(method, record, contentType);
+					const responseData = method.serialize(record);
 					if (method.type === MethodType.Unary || method.type === MethodType.ClientStream) {
 						response.setHeader('content-length', String(responseData.length));
 					}

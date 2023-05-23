@@ -206,9 +206,9 @@ describe('readStream', () => {
 describe('writeStream', () => {
 	it('should correctly write the stream', async () => {
 		const mockRecord = { key: 'value' };
-		const generator = async function* gen() {
+		async function* gen() {
 			yield mockRecord;
-		};
+		}
 		const encoder = (record: typeof mockRecord) => {
 			const encoder = new TextEncoder();
 			return encoder.encode(JSON.stringify(record));
@@ -232,7 +232,7 @@ describe('writeStream', () => {
 			getWriter: () => mockWriter,
 		} as WritableStream<Uint8Array>;
 
-		await writeTempoStream(mockStream, generator, encoder);
+		await writeTempoStream(mockStream, gen(), encoder);
 
 		// Validate data
 		for (let i = 0; i < writtenData.length; i++) {
@@ -265,10 +265,10 @@ describe('TempoStream', () => {
 		const mockRecord1 = { key: 'value1' };
 		const mockRecord2 = { key: 'value2' };
 
-		const generator = async function* gen() {
+		async function* gen() {
 			yield mockRecord1;
 			yield mockRecord2;
-		};
+		}
 
 		const encoder = (record: typeof mockRecord1 | typeof mockRecord2) => {
 			const encoder = new TextEncoder();
@@ -283,7 +283,7 @@ describe('TempoStream', () => {
 		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 
 		// Start writing to the stream but don't await it
-		writeTempoStream(transformStream.writable, generator, encoder);
+		writeTempoStream(transformStream.writable, gen(), encoder);
 
 		// Now read the data back from the stream
 		const readData: (typeof mockRecord1 | typeof mockRecord2)[] = [];

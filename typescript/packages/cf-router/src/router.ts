@@ -18,6 +18,7 @@ import {
 	TempoRouterConfiguration,
 	BebopMethodAny,
 } from '@tempojs/server';
+import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	constructor(
@@ -115,18 +116,13 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		}
 	}
 
-	private async invokeUnaryMethod(
-		request: Request,
-		context: ServerContext,
-		method: BebopMethodAny,
-		contentType: string,
-	): Promise<any> {
+	private async invokeUnaryMethod(request: Request, context: ServerContext, method: BebopMethodAny): Promise<any> {
 		await this.setAuthContext(request, context);
 		const requestData = new Uint8Array(await request.arrayBuffer());
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 		}
-		const record = this.deserializeRecord(method, requestData, contentType);
+		const record = method.deserialize(requestData);
 		return await method.invoke(record, context);
 	}
 
@@ -134,7 +130,6 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		request: Request,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<any> {
 		await this.setAuthContext(request, context);
 		const body = request.body;
@@ -148,7 +143,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return this.deserializeRecord(method, data, contentType);
+					return method.deserialize(data);
 				},
 				context.clientDeadline(),
 			);
@@ -160,14 +155,13 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		request: Request,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
 		const requestData = new Uint8Array(await request.arrayBuffer());
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 		}
-		const record = this.deserializeRecord(method, requestData, contentType);
+		const record = method.deserialize(requestData);
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
 			throw new TempoError(TempoStatusCode.INTERNAL, 'service method incorrect: method must be async generator');
 		}
@@ -178,7 +172,6 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		request: Request,
 		context: ServerContext,
 		method: BebopMethodAny,
-		contentType: string,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
 		const body = request.body;
@@ -192,7 +185,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return this.deserializeRecord(method, data, contentType);
+					return method.deserialize(data);
 				},
 				context.clientDeadline(),
 			);
@@ -269,16 +262,16 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				env,
 			);
 			const handleRequest = async () => {
-				let responseGenerator: any | undefined = undefined;
-				let response: any | undefined;
+				let recordGenerator: AsyncGenerator<BebopRecord, void, undefined> | undefined = undefined;
+				let record: BebopRecord | undefined;
 				if (method.type === MethodType.Unary) {
-					response = await this.invokeUnaryMethod(request, context, method, contentType);
+					record = await this.invokeUnaryMethod(request, context, method);
 				} else if (method.type === MethodType.ClientStream) {
-					response = await this.invokeClientStreamMethod(request, context, method, contentType);
+					record = await this.invokeClientStreamMethod(request, context, method);
 				} else if (method.type === MethodType.ServerStream) {
-					responseGenerator = await this.invokeServerStreamMethod(request, context, method, contentType);
+					recordGenerator = await this.invokeServerStreamMethod(request, context, method);
 				} else if (method.type === MethodType.DuplexStream) {
-					responseGenerator = await this.invokeDuplexStreamMethod(request, context, method, contentType);
+					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
 				outgoingMetadata.freeze();
 				const responseHeaders = new Headers();
@@ -299,24 +292,26 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 
 				let responseData: ReadableStream<Uint8Array> | Uint8Array;
 
-				if (responseGenerator !== undefined) {
+				if (recordGenerator !== undefined) {
 					const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 					responseData = transformStream.readable;
-
 					tempoStream.writeTempoStream(
 						transformStream.writable,
-						() => responseGenerator,
-						(payload: any) => {
-							const data = this.serializeRecord(method, payload, contentType);
+						recordGenerator,
+						(payload: BebopRecord) => {
+							const data = method.serialize(payload);
 							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
 								throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
 							}
-							return this.serializeRecord(method, payload, contentType);
+							return data;
 						},
 						context.clientDeadline(),
 					);
 				} else {
-					responseData = this.serializeRecord(method, response, contentType);
+					if (record === undefined) {
+						throw new TempoError(TempoStatusCode.INTERNAL, 'service method did not return a record');
+					}
+					responseData = method.serialize(record);
 					if (this.maxSendMessageSize !== undefined && responseData.length > this.maxSendMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
 					}

@@ -1,4 +1,4 @@
-import { TempoLogger, Deadline, TempoContentType } from '@tempojs/common';
+import { TempoLogger, Deadline } from '@tempojs/common';
 import { TempoChannel as TempoChannel } from './channel';
 import { RetryPolicy } from './retry';
 import { CallCredentials } from './auth';
@@ -11,11 +11,6 @@ export class TempoChannelOptions {
 	 * An optional logger instance for logging purposes.
 	 */
 	public logger?: TempoLogger;
-
-	/**
-	 * The content type used for encoding and decoding messages. Defaults to the value in `TempoChannel.defaultContentType`.
-	 */
-	public contentType?: TempoContentType;
 
 	/**
 	 * The maximum size of the message that can be sent.
@@ -50,7 +45,6 @@ export class TempoChannelOptions {
 	constructor() {
 		this.maxReceiveMessageSize = TempoChannel.defaultMaxReceiveMessageSize;
 		this.maxRetryAttempts = TempoChannel.defaultMaxRetryAttempts;
-		this.contentType = TempoChannel.defaultContentType;
 		this.credentials = TempoChannel.defaultCredentials;
 		this.unsafeUseInsecureChannelCallCredentials = false;
 	}
