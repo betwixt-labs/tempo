@@ -20,6 +20,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+          always-auth: true
+      
+      - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Install dependencies
         run: yarn install

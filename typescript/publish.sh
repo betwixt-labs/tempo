@@ -16,7 +16,7 @@ for package in */; do
   cd "$package"
 
   # Publish the package using yarn publish
-  yarn publish
+  yarn publish --non-interactive
 
   # Move back to the parent directory
   cd ..
