@@ -1,8 +1,7 @@
-import { TempoContentType, TempoError, TempoLogger, TempoStatusCode, TempoUtil } from '@tempojs/common';
+import { TempoError, TempoLogger, TempoStatusCode } from '@tempojs/common';
 import { ServiceRegistry } from './registry';
 import { AuthInterceptor } from './intercept';
 import { Metadata } from '@tempojs/common';
-import { BebopMethodAny } from './method';
 
 /**
  * Interface defining the configuration options for a TempoRouter instance.
@@ -121,9 +120,9 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	 * @throws {Error} When the content type header is not present, when it doesn't contain "application/tempo"
 	 * or when it doesn't have a format specified.
 	 * @param {string | null} header The content type header from the request.
-	 * @returns {TempoContentType} The content type of the request.
+	 * @returns {string} The content type of the request.
 	 */
-	protected getContentType(header: string | null | undefined): TempoContentType {
+	protected getContentType(header: string | null | undefined): string {
 		if (!header) {
 			throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, 'invalid request: no content type header');
 		}
@@ -137,7 +136,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, 'invalid request: no format on content type');
 		}
 		const format = header.split('+')[1];
-		if (format === 'bebop' || format === 'json') {
+		if (format === 'bebop') {
 			return format;
 		}
 		throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${format}`);
@@ -156,27 +155,5 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			return new Metadata();
 		}
 		return Metadata.fromHttpHeader(value);
-	}
-
-	protected deserializeRecord(method: BebopMethodAny, data: Uint8Array, contentType: string): any {
-		switch (contentType) {
-			case 'json':
-				return JSON.parse(TempoUtil.textDecoder.decode(data));
-			case 'bebop':
-				return method.deserialize(data);
-			default:
-				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${contentType}`);
-		}
-	}
-
-	protected serializeRecord(method: BebopMethodAny, record: any, contentType: string): Uint8Array {
-		switch (contentType) {
-			case 'json':
-				return TempoUtil.textEncoder.encode(record);
-			case 'bebop':
-				return method.serialize(record);
-			default:
-				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${contentType}`);
-		}
 	}
 }

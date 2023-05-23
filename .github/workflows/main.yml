@@ -32,5 +32,5 @@ jobs:
         
       - name: Execute build.sh script
         run: |
-          cd typescript
           ./build.sh
+        working-directory: typescript

@@ -5,7 +5,6 @@ import {
 	ConsoleLogger,
 	Deadline,
 	Metadata,
-	TempoContentType,
 	parseCredentials,
 	ExecutionEnvironment,
 	TempoVersion,
@@ -121,28 +120,6 @@ export abstract class BaseChannel {
 
 	public abstract removeCredentials(): Promise<void>;
 	public abstract getCredentials(): Promise<Credentials | undefined>;
-
-	protected deserializeRecord(method: MethodInfo<any, any>, data: Uint8Array, contentType: string): any {
-		switch (contentType) {
-			case 'json':
-				return JSON.parse(TempoUtil.textDecoder.decode(data));
-			case 'bebop':
-				return method.deserialize(data);
-			default:
-				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${contentType}`);
-		}
-	}
-
-	protected serializeRecord(method: MethodInfo<any, any>, record: any, contentType: string): Uint8Array {
-		switch (contentType) {
-			case 'json':
-				return TempoUtil.textEncoder.encode(record);
-			case 'bebop':
-				return method.serialize(record);
-			default:
-				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${contentType}`);
-		}
-	}
 }
 
 /**
@@ -166,18 +143,22 @@ export abstract class BaseChannel {
  */
 const supportsRequestStreams = (() => {
 	if (ExecutionEnvironment.isBrowser || ExecutionEnvironment.isWebWorker) {
-		let duplexAccessed = false;
-		const hasContentType = new Request('', {
-			body: new ReadableStream(),
-			method: 'POST',
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			//@ts-ignore
-			get duplex() {
-				duplexAccessed = true;
-				return 'half';
-			},
-		}).headers.has('Content-Type');
-		return duplexAccessed && !hasContentType;
+		try {
+			let duplexAccessed = false;
+			const hasContentType = new Request('', {
+				body: new ReadableStream(),
+				method: 'POST',
+				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+				//@ts-ignore
+				get duplex() {
+					duplexAccessed = true;
+					return 'half';
+				},
+			}).headers.has('Content-Type');
+			return duplexAccessed && !hasContentType;
+		} catch {
+			return false;
+		}
 	}
 	return true;
 })();
@@ -186,14 +167,12 @@ const supportsRequestStreams = (() => {
  * Represents a Tempo channel for communication with a remote server.
  */
 export class TempoChannel extends BaseChannel {
-	public static readonly defaultContentType: TempoContentType = 'bebop';
 	public static readonly defaultMaxRetryAttempts: number = 5;
 	public static readonly defaultMaxReceiveMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultMaxSendMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultCredentials: CallCredentials = InsecureChannelCredentials.create();
 
 	private readonly logger: TempoLogger;
-	private readonly contentType: TempoContentType;
 	private readonly isSecure: boolean;
 	private readonly maxReceiveMessageSize: number;
 	private readonly credentials: CallCredentials;
@@ -211,8 +190,7 @@ export class TempoChannel extends BaseChannel {
 		super(target);
 		this.logger = options.logger ??= new ConsoleLogger('TempoChannel');
 		this.logger.debug('creating new TempoChannel');
-		this.contentType = options.contentType ??= TempoChannel.defaultContentType;
-		this.contentTypeValue = `application/tempo+${this.contentType}`;
+		this.contentTypeValue = `application/tempo+bebop`;
 		this.isSecure = target.protocol === 'https:';
 		this.credentials = options.credentials ??= TempoChannel.defaultCredentials;
 		if (
@@ -510,7 +488,7 @@ export class TempoChannel extends BaseChannel {
 	): Promise<TResponse> {
 		try {
 			// Prepare request data based on content type
-			const requestData: Uint8Array = this.serializeRecord(method, request, this.contentType);
+			const requestData: Uint8Array = method.serialize(request);
 
 			const requestInit = await this.createRequest(requestData, context, method, options);
 
@@ -545,7 +523,7 @@ export class TempoChannel extends BaseChannel {
 			await this.processResponseHeaders(response, context, method.type);
 			// Deserialize the response based on the content type
 			const responseData = new Uint8Array(await response.arrayBuffer());
-			const responseBody: TResponse = this.deserializeRecord(method, responseData, this.contentType);
+			const responseBody: TResponse = method.deserialize(responseData);
 			// Return the deserialized response object
 			return responseBody;
 		} catch (e) {
@@ -579,7 +557,7 @@ export class TempoChannel extends BaseChannel {
 		tempoStream.writeTempoStream(
 			transformStream.writable,
 			generator,
-			(payload) => this.serializeRecord(method, payload, this.contentType),
+			(payload) => method.serialize(payload),
 			options?.deadline,
 			options?.controller,
 		);
@@ -597,7 +575,7 @@ export class TempoChannel extends BaseChannel {
 		await this.processResponseHeaders(response, context, method.type);
 		// Deserialize the response based on the content type
 		const responseData = new Uint8Array(await response.arrayBuffer());
-		const responseBody: TResponse = this.deserializeRecord(method, responseData, this.contentType);
+		const responseBody: TResponse = method.deserialize(responseData);
 		// Return the deserialized response object
 		return responseBody;
 	}
@@ -611,7 +589,7 @@ export class TempoChannel extends BaseChannel {
 		options?: CallOptions | undefined,
 	): Promise<AsyncGenerator<TResponse, void, undefined>> {
 		// Prepare request data based on content type
-		const requestData: Uint8Array = this.serializeRecord(method, request, this.contentType);
+		const requestData: Uint8Array = method.serialize(request);
 
 		const requestInit = await this.createRequest(requestData, context, method, options);
 
@@ -657,7 +635,7 @@ export class TempoChannel extends BaseChannel {
 						`received message larger than ${this.maxReceiveMessageSize} bytes`,
 					);
 				}
-				return this.deserializeRecord(method, buffer, this.contentType);
+				return method.deserialize(buffer);
 			},
 			options?.deadline,
 			options?.controller,
@@ -679,7 +657,7 @@ export class TempoChannel extends BaseChannel {
 		tempoStream.writeTempoStream(
 			transformStream.writable,
 			generator,
-			(payload) => this.serializeRecord(method, payload, this.contentType),
+			(payload) => method.serialize(payload),
 			options?.deadline,
 			options?.controller,
 		);
@@ -708,7 +686,7 @@ export class TempoChannel extends BaseChannel {
 						`received message larger than ${this.maxReceiveMessageSize} bytes`,
 					);
 				}
-				return this.deserializeRecord(method, buffer, this.contentType);
+				return method.deserialize(buffer);
 			},
 			options?.deadline,
 			options?.controller,

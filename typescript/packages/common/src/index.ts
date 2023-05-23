@@ -16,11 +16,6 @@ import {
 } from './credentials';
 import { MethodType } from './flags';
 
-/**
- * Represents the possible content types used for encoding and decoding messages.
- */
-export type TempoContentType = 'bebop' | 'json';
-
 export {
 	TempoStatusCode,
 	TempoError,

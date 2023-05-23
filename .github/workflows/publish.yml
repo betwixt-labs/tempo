@@ -27,10 +27,11 @@ jobs:
 
       - name: Execute build.sh script
         run: |
-          cd typescript
           ./build.sh
+        working-directory: typescript
       
       - name: Publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: ./publish
+        run: ./publish.sh
+        working-directory: typescript
