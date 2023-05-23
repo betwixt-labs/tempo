@@ -20,6 +20,7 @@ import {
 import { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import { FetchHeadersAdapter } from './header';
 import { readTempoStream, writeTempoStream } from './helpers';
+import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerResponse> {
 	constructor(
@@ -275,8 +276,8 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			);
 
 			const handleRequest = async () => {
-				let recordGenerator: any | undefined = undefined;
-				let record: any | undefined;
+				let recordGenerator: AsyncGenerator<BebopRecord, void, undefined> | undefined = undefined;
+				let record: BebopRecord | undefined;
 				if (method.type === MethodType.Unary) {
 					record = await this.invokeUnaryMethod(request, context, method);
 				} else if (method.type === MethodType.ClientStream) {
@@ -311,7 +312,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					writeTempoStream(
 						response,
 						() => recordGenerator,
-						(payload: any) => {
+						(payload: BebopRecord) => {
 							const data = method.serialize(payload);
 							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
 								throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');

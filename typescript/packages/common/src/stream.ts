@@ -234,7 +234,7 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
  */
 export async function writeTempoStream<TRecord extends BebopRecord>(
 	stream: WritableStream<Uint8Array>,
-	generator: () => AsyncGenerator<TRecord, void, undefined>,
+	generator: () => AsyncGenerator<TRecord, void, undefined> | undefined,
 	encoder: (payload: TRecord) => Uint8Array,
 	deadline?: Deadline,
 	abortController?: AbortController,
@@ -242,7 +242,10 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 	const writer = stream.getWriter();
 	const streamId = generateStreamIdentifier();
 	let writeIndex = 0; // keep track of where to write data
-
+	const recordGenerator = generator();
+	if (recordGenerator === undefined) {
+		throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'record generator function is undefined');
+	}
 	try {
 		let buffer = new Uint8Array(2048);
 		const header = {
@@ -267,7 +270,7 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 		};
 
 		const writeFrames = async () => {
-			for await (const value of generator()) {
+			for await (const value of recordGenerator) {
 				const payload = encoder(value);
 				await writeFrame(payload);
 			}

@@ -18,6 +18,7 @@ import {
 	TempoRouterConfiguration,
 	BebopMethodAny,
 } from '@tempojs/server';
+import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	constructor(
@@ -261,16 +262,16 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				env,
 			);
 			const handleRequest = async () => {
-				let responseGenerator: any | undefined = undefined;
-				let response: any | undefined;
+				let recordGenerator: AsyncGenerator<BebopRecord, void, undefined> | undefined = undefined;
+				let record: BebopRecord | undefined;
 				if (method.type === MethodType.Unary) {
-					response = await this.invokeUnaryMethod(request, context, method);
+					record = await this.invokeUnaryMethod(request, context, method);
 				} else if (method.type === MethodType.ClientStream) {
-					response = await this.invokeClientStreamMethod(request, context, method);
+					record = await this.invokeClientStreamMethod(request, context, method);
 				} else if (method.type === MethodType.ServerStream) {
-					responseGenerator = await this.invokeServerStreamMethod(request, context, method);
+					recordGenerator = await this.invokeServerStreamMethod(request, context, method);
 				} else if (method.type === MethodType.DuplexStream) {
-					responseGenerator = await this.invokeDuplexStreamMethod(request, context, method);
+					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
 				outgoingMetadata.freeze();
 				const responseHeaders = new Headers();
@@ -291,13 +292,13 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 
 				let responseData: ReadableStream<Uint8Array> | Uint8Array;
 
-				if (responseGenerator !== undefined) {
+				if (recordGenerator !== undefined) {
 					const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 					responseData = transformStream.readable;
 					tempoStream.writeTempoStream(
 						transformStream.writable,
-						() => responseGenerator,
-						(payload: any) => {
+						() => recordGenerator,
+						(payload: BebopRecord) => {
 							const data = method.serialize(payload);
 							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
 								throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
@@ -307,7 +308,10 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 						context.clientDeadline(),
 					);
 				} else {
-					responseData = method.serialize(response);
+					if (record === undefined) {
+						throw new TempoError(TempoStatusCode.INTERNAL, 'service method did not return a record');
+					}
+					responseData = method.serialize(record);
 					if (this.maxSendMessageSize !== undefined && responseData.length > this.maxSendMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'response too large');
 					}
