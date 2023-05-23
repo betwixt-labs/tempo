@@ -89,7 +89,6 @@ echo "export const TempoVersion = '$VERSION';" > $COMMON_VERSION_FILE
 echo "All package versions and '@tempojs' dependencies have been updated to $VERSION."
 
 # Test
-
 yarn vitest run
 
 # Build and pack the 'common' package.

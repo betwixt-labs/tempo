@@ -1,0 +1,36 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v*' # Match tags starting with 'v'
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+            fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: yarn install
+        working-directory: typescript
+
+      - name: Execute build.sh script
+        run: |
+          cd typescript
+          ./build.sh
+      
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: ./publish
