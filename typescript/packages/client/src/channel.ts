@@ -556,8 +556,8 @@ export class TempoChannel extends BaseChannel {
 		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 		tempoStream.writeTempoStream(
 			transformStream.writable,
-			generator,
-			(payload) => method.serialize(payload),
+			generator(),
+			(payload: TRequest) => method.serialize(payload),
 			options?.deadline,
 			options?.controller,
 		);
@@ -628,7 +628,7 @@ export class TempoChannel extends BaseChannel {
 		const body = response.body;
 		return tempoStream.readTempoStream(
 			body,
-			(buffer) => {
+			(buffer: Uint8Array) => {
 				if (buffer.length > this.maxReceiveMessageSize) {
 					throw new TempoError(
 						TempoStatusCode.RESOURCE_EXHAUSTED,
@@ -656,8 +656,8 @@ export class TempoChannel extends BaseChannel {
 		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
 		tempoStream.writeTempoStream(
 			transformStream.writable,
-			generator,
-			(payload) => method.serialize(payload),
+			generator(),
+			(payload: TRequest) => method.serialize(payload),
 			options?.deadline,
 			options?.controller,
 		);
@@ -679,7 +679,7 @@ export class TempoChannel extends BaseChannel {
 		const body = response.body;
 		return tempoStream.readTempoStream(
 			body,
-			(buffer) => {
+			(buffer: Uint8Array) => {
 				if (buffer.length > this.maxReceiveMessageSize) {
 					throw new TempoError(
 						TempoStatusCode.RESOURCE_EXHAUSTED,

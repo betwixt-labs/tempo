@@ -297,7 +297,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					responseData = transformStream.readable;
 					tempoStream.writeTempoStream(
 						transformStream.writable,
-						() => recordGenerator,
+						recordGenerator,
 						(payload: BebopRecord) => {
 							const data = method.serialize(payload);
 							if (this.maxSendMessageSize !== undefined && data.length > this.maxSendMessageSize) {
