@@ -7,7 +7,7 @@
 
 <div align="center">
   <h1>Tempo</h1>
-   <h3>Don't miss a beat.<br/>Efficient, end-to-end typesafe APIs.</h3>
+   <h3>Don't miss a beat.<br/>Real-time, end-to-end typesafe APIs.</h3>
   <a href="https://github.com/betwixt-labs/tempo/blob/main/LICENSE">
     <img alt="Apache License" src="https://img.shields.io/github/license/betwixt-labs/tempo" />
   </a>

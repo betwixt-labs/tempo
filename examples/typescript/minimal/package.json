@@ -19,15 +19,15 @@
   ],
   "devDependencies": {
     "@types/node": "^18.7.20",
-    "bebop-tools": "^2.6.2",
+    "bebop-tools": "^2.7.0",
     "tsup": "^6.7.0",
     "tsx": "^3.12.7",
     "typescript": "^4.8.3",
     "wait-port": "^1.0.4"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.1-alpha.19",
-    "@tempojs/node-http-router": "^0.0.1-alpha.19",
-    "bebop": "^2.6.2"
+    "@tempojs/client": "^0.0.1-alpha.20",
+    "@tempojs/node-http-router": "^0.0.1-alpha.20",
+    "bebop": "^2.7.0"
   }
 }
