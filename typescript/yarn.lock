@@ -322,7 +322,7 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.3.tgz#6bda7819aae6ea0b386ebc5b24bdf602f1b42b01"
   integrity sha512-OPs5WnnT1xkCBiuQrZA4+YAV4HEJejmHneyraIaxsbev5yCEr6KMwINNFP9wQeFIw8FWcoTqF3vQsa5CDaI+8Q==
 
-"@types/node@^14.14.31", "@types/node@^14.14.7":
+"@types/node@^14.14.31":
   version "14.18.43"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.43.tgz#679e000d9f1d914132ea295b4a1ffdf20370ec49"
   integrity sha512-n3eFEaoem0WNwLux+k272P0+aq++5o05bA9CfiwKPdYPB5ZambWKdWoeHy7/OJiizMhzg27NLaZ6uzjLTzXceQ==
@@ -552,12 +552,10 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-bebop@^2.6.2:
-  version "2.6.2"
-  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.6.2.tgz#8619b09da84074e72dfc25ac3972f01ec6109831"
-  integrity sha512-NdZvJJw1B9UOSa6kSSa4qEZ0oFp9VgboY0Msekn0sNRpd+5PDeVLdlyB2HVyJ8vGGIPqMNfEAllIHJKiV7Zmhg==
-  dependencies:
-    "@types/node" "^14.14.7"
+bebop@^2.7.0:
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.7.0.tgz#96d86b3323fe15ac57eb47b1cd74785497357465"
+  integrity sha512-gyQUaKFuD1ScoZlrPLstGRmpA4cYJau9eUQI7xYCbvPdWz4m7jOG7nPvw32wjpuD3Qdrr7nAqVPcWVrL8jdbpQ==
 
 benchmark@^2.1.4:
   version "2.1.4"
