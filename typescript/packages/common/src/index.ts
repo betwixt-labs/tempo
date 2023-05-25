@@ -16,6 +16,8 @@ import {
 } from './credentials';
 import { MethodType } from './flags';
 
+import { HookRegistry } from './hook';
+
 export {
 	TempoStatusCode,
 	TempoError,
@@ -35,4 +37,5 @@ export {
 	TempoVersion,
 	tempoStream,
 	MethodType,
+	HookRegistry,
 };

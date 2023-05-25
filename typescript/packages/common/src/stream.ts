@@ -136,13 +136,13 @@ export const getFlag = (flagName: TempoStreamFlag): number => {
  * @generator
  * @template TRecord - The type of the decoded payload.
  * @param {ReadableStream<Uint8Array>} stream - The ReadableStream to read from.
- * @param {(buffer: Uint8Array) => TRecord} decoder - The function to decode the payload.
+ * @param {(buffer: Uint8Array) => Promise<TRecord>} decoder - The function to decode the payload.
  * @yields {TRecord} The decoded payload.
  * @throws {TempoError} If the stream ends in the middle of a Tempo stream frame; this indicates a data loss.
  */
 export async function* readTempoStream<TRecord extends BebopRecord>(
 	stream: ReadableStream<Uint8Array>,
-	decoder: (buffer: Uint8Array) => TRecord,
+	decoder: (buffer: Uint8Array) => Promise<TRecord>,
 	deadline?: Deadline,
 	abortController?: AbortController,
 ): AsyncGenerator<TRecord, void, undefined> {
@@ -207,7 +207,7 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 							writeIndex += value.length;
 						}
 					}
-					yield decoder(buffer.subarray(readIndex, readIndex + payloadSize));
+					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
 					readIndex += payloadSize;
 				}
 			}

@@ -118,11 +118,17 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 
 	private async invokeUnaryMethod(request: Request, context: ServerContext, method: BebopMethodAny): Promise<any> {
 		await this.setAuthContext(request, context);
+		if (this.hooks !== undefined) {
+			await this.hooks.executeRequestHooks(context);
+		}
 		const requestData = new Uint8Array(await request.arrayBuffer());
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 		}
 		const record = method.deserialize(requestData);
+		if (this.hooks !== undefined) {
+			await this.hooks.executeDecodeHooks(context, record);
+		}
 		return await method.invoke(record, context);
 	}
 
@@ -132,6 +138,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		method: BebopMethodAny,
 	): Promise<any> {
 		await this.setAuthContext(request, context);
+		if (this.hooks !== undefined) {
+			await this.hooks.executeRequestHooks(context);
+		}
 		const body = request.body;
 		if (body === null) {
 			throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'invalid request: missing body');
@@ -139,11 +148,15 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		const generator = () => {
 			return tempoStream.readTempoStream(
 				body,
-				(data: Uint8Array) => {
+				async (data: Uint8Array) => {
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return method.deserialize(data);
+					const record = method.deserialize(data);
+					if (this.hooks !== undefined) {
+						await this.hooks.executeDecodeHooks(context, record);
+					}
+					return record;
 				},
 				context.clientDeadline(),
 			);
@@ -157,6 +170,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		method: BebopMethodAny,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
+		if (this.hooks !== undefined) {
+			await this.hooks.executeRequestHooks(context);
+		}
 		const requestData = new Uint8Array(await request.arrayBuffer());
 		if (requestData.length > this.maxReceiveMessageSize) {
 			throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
@@ -164,6 +180,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		const record = method.deserialize(requestData);
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
 			throw new TempoError(TempoStatusCode.INTERNAL, 'service method incorrect: method must be async generator');
+		}
+		if (this.hooks !== undefined) {
+			await this.hooks.executeDecodeHooks(context, record);
 		}
 		return method.invoke(record, context);
 	}
@@ -174,6 +193,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		method: BebopMethodAny,
 	): Promise<AsyncGenerator<any, void, unknown>> {
 		await this.setAuthContext(request, context);
+		if (this.hooks !== undefined) {
+			await this.hooks.executeRequestHooks(context);
+		}
 		const body = request.body;
 		if (body === null) {
 			throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'invalid request: missing body');
@@ -181,11 +203,15 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		const generator = () => {
 			return tempoStream.readTempoStream(
 				body,
-				(data: Uint8Array) => {
+				async (data: Uint8Array) => {
 					if (data.length > this.maxReceiveMessageSize) {
 						throw new TempoError(TempoStatusCode.RESOURCE_EXHAUSTED, 'request too large');
 					}
-					return method.deserialize(data);
+					const record = method.deserialize(data);
+					if (this.hooks !== undefined) {
+						await this.hooks.executeDecodeHooks(context, record);
+					}
+					return record;
 				},
 				context.clientDeadline(),
 			);
@@ -273,15 +299,11 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				} else if (method.type === MethodType.DuplexStream) {
 					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
-				outgoingMetadata.freeze();
 				const responseHeaders = new Headers();
 				if (origin !== null) {
 					this.setCorsHeaders(responseHeaders, origin);
 				}
 				responseHeaders.set('content-type', `application/tempo+${contentType}`);
-				if (outgoingMetadata.size() > 0) {
-					responseHeaders.set('custom-metadata', outgoingMetadata.toHttpHeader());
-				}
 
 				const outgoingCredentials = context.getOutgoingCredentials();
 				if (outgoingCredentials) {
@@ -289,7 +311,14 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				}
 				responseHeaders.set('tempo-status', '0');
 				responseHeaders.set('tempo-message', 'OK');
-
+				if (this.hooks !== undefined) {
+					await this.hooks.executeResponseHooks(context);
+				}
+				// freeze metadata after response hooks are ran
+				outgoingMetadata.freeze();
+				if (outgoingMetadata.size() > 0) {
+					responseHeaders.set('custom-metadata', outgoingMetadata.toHttpHeader());
+				}
 				let responseData: ReadableStream<Uint8Array> | Uint8Array;
 
 				if (recordGenerator !== undefined) {
@@ -343,6 +372,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 			} else if (e instanceof Error) {
 				message = e.message;
 				this.logger.error(message, undefined, e);
+			}
+			if (e instanceof Error && this.hooks !== undefined) {
+				await this.hooks.executeErrorHooks(undefined, e);
 			}
 			const responseHeaders = new Headers();
 			responseHeaders.set('tempo-status', `${status}`);
