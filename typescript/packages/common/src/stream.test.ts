@@ -108,9 +108,9 @@ describe('getFlag', () => {
 });
 
 // Mock decoder function
-const mockDecoder = (buffer: Uint8Array): string => {
+const mockDecoder = (buffer: Uint8Array): Promise<string> => {
 	// Convert buffer to string for testing purposes
-	return TempoUtil.textDecoder.decode(buffer);
+	return Promise.resolve(TempoUtil.textDecoder.decode(buffer));
 };
 
 // Helper function to create a ReadableStream with Uint8Array chunks
@@ -289,7 +289,7 @@ describe('TempoStream', () => {
 		const readData: (typeof mockRecord1 | typeof mockRecord2)[] = [];
 
 		for await (const payload of readTempoStream(transformStream.readable, decoder)) {
-			readData.push(payload);
+			readData.push(payload as typeof mockRecord1);
 		}
 
 		// Validate that we read back what we wrote

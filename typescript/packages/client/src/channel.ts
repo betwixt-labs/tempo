@@ -11,6 +11,7 @@ import {
 	Credentials,
 	tempoStream,
 	MethodType,
+	HookRegistry,
 } from '@tempojs/common';
 import { TempoChannelOptions, CallOptions } from './options';
 import { BebopRecord } from 'bebop';
@@ -26,11 +27,12 @@ import { CallCredentials, InsecureChannelCredentials } from './auth';
  * communication channels for Tempo.
  */
 export abstract class BaseChannel {
+	protected hooks?: HookRegistry<ClientContext, unknown> | undefined;
 	/**
 	 * Constructs a BaseChannel instance.
 	 * @param {URL} target - The target URL of the server.
 	 */
-	protected constructor(protected readonly target: URL) {}
+	protected constructor(protected readonly target: URL, protected readonly logger: TempoLogger) {}
 
 	/**
 	 * A function to create an instance of a client class extending BaseClient.
@@ -120,6 +122,14 @@ export abstract class BaseChannel {
 
 	public abstract removeCredentials(): Promise<void>;
 	public abstract getCredentials(): Promise<Credentials | undefined>;
+
+	/**
+	 * Defines a hook registry for the channel.
+	 * @param hooks - The hook registry to be used.
+	 */
+	public useHooks<TEnvironment>(hooks: HookRegistry<ClientContext, TEnvironment>): void {
+		this.hooks = hooks;
+	}
 }
 
 /**
@@ -172,7 +182,6 @@ export class TempoChannel extends BaseChannel {
 	public static readonly defaultMaxSendMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultCredentials: CallCredentials = InsecureChannelCredentials.create();
 
-	private readonly logger: TempoLogger;
 	private readonly isSecure: boolean;
 	private readonly maxReceiveMessageSize: number;
 	private readonly credentials: CallCredentials;
@@ -187,8 +196,7 @@ export class TempoChannel extends BaseChannel {
 	 * @protected
 	 */
 	protected constructor(target: URL, options: TempoChannelOptions) {
-		super(target);
-		this.logger = options.logger ??= new ConsoleLogger('TempoChannel');
+		super(target, (options.logger ??= new ConsoleLogger('TempoChannel')));
 		this.logger.debug('creating new TempoChannel');
 		this.contentTypeValue = `application/tempo+bebop`;
 		this.isSecure = target.protocol === 'https:';
@@ -489,7 +497,143 @@ export class TempoChannel extends BaseChannel {
 		try {
 			// Prepare request data based on content type
 			const requestData: Uint8Array = method.serialize(request);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeRequestHooks(context);
+			}
+			const requestInit = await this.createRequest(requestData, context, method, options);
+			let response: Response;
+			// If the retry policy is set, execute the request with retries
+			if (options?.retryPolicy) {
+				response = await this.executeWithRetry(
+					async (retryAttempt: number) => {
+						if (retryAttempt > 0) {
+							context.outgoingMetadata.set('tempo-previous-rpc-attempts', String(retryAttempt));
+							if (requestInit.headers instanceof Headers) {
+								requestInit.headers.set('custom-metadata', context.outgoingMetadata.toHttpHeader());
+							}
+						}
+						return await this.fetchData(requestInit);
+					},
+					options.retryPolicy,
+					options.deadline,
+					options.controller,
+				);
+				// If the deadline is set, execute the request within the deadline
+			} else if (options?.deadline) {
+				response = await options.deadline.executeWithinDeadline(async () => {
+					return await this.fetchData(requestInit);
+				}, options.controller);
+			} else {
+				// Otherwise, just execute the request indefinitely
+				response = await this.fetchData(requestInit);
+			}
+			// Validate response headers
+			await this.processResponseHeaders(response, context, method.type);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeResponseHooks(context);
+			}
+			// Deserialize the response based on the content type
+			const responseData = new Uint8Array(await response.arrayBuffer());
+			const record: TResponse = method.deserialize(responseData);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeDecodeHooks(context, record);
+			}
+			// Return the deserialized response object
+			return record;
+		} catch (e) {
+			if (this.hooks !== undefined && e instanceof Error) {
+				this.hooks.executeErrorHooks(context, e);
+			}
+			if (e instanceof TempoError) {
+				throw e;
+			}
+			if (e instanceof Error) {
+				if (e.name === 'AbortError') {
+					throw new TempoError(TempoStatusCode.ABORTED, 'RPC fetch aborted', e);
+				} else {
+					throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', e);
+				}
+			}
+			throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', { data: e });
+		}
+	}
 
+	/**
+	 * {@inheritDoc BaseChannel.startClientStream}
+	 */
+	public override async startClientStream<TRequest extends BebopRecord, TResponse extends BebopRecord>(
+		generator: () => AsyncGenerator<TRequest, void, undefined>,
+		context: ClientContext,
+		method: MethodInfo<TRequest, TResponse>,
+		options?: CallOptions | undefined,
+	): Promise<TResponse> {
+		try {
+			if (!supportsRequestStreams) {
+				throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
+			}
+			const transformStream = new TransformStream<Uint8Array, Uint8Array>();
+			tempoStream.writeTempoStream(
+				transformStream.writable,
+				generator(),
+				(payload: TRequest) => method.serialize(payload),
+				options?.deadline,
+				options?.controller,
+			);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeRequestHooks(context);
+			}
+			const requestInit = await this.createRequest(transformStream.readable, context, method, options);
+			let response: Response;
+			if (options?.deadline) {
+				response = await options.deadline.executeWithinDeadline(async () => {
+					return await this.fetchData(requestInit);
+				}, options.controller);
+			} else {
+				// Otherwise, just execute the request indefinitely
+				response = await this.fetchData(requestInit);
+			}
+			// Validate response headers
+			await this.processResponseHeaders(response, context, method.type);
+			// Deserialize the response based on the content type
+			const responseData = new Uint8Array(await response.arrayBuffer());
+			const record: TResponse = method.deserialize(responseData);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeDecodeHooks(context, record);
+			}
+			// Return the deserialized response object
+			return record;
+		} catch (e) {
+			if (this.hooks !== undefined && e instanceof Error) {
+				this.hooks.executeErrorHooks(context, e);
+			}
+			if (e instanceof TempoError) {
+				throw e;
+			}
+			if (e instanceof Error) {
+				if (e.name === 'AbortError') {
+					throw new TempoError(TempoStatusCode.ABORTED, 'RPC fetch aborted', e);
+				} else {
+					throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', e);
+				}
+			}
+			throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', { data: e });
+		}
+	}
+	/**
+	 * {@inheritDoc BaseChannel.startServerStream}
+	 */
+	public override async startServerStream<TRequest extends BebopRecord, TResponse extends BebopRecord>(
+		request: TRequest,
+		context: ClientContext,
+		method: MethodInfo<TRequest, TResponse>,
+		options?: CallOptions | undefined,
+	): Promise<AsyncGenerator<TResponse, void, undefined>> {
+		try {
+			// Prepare request data based on content type
+			const requestData: Uint8Array = method.serialize(request);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeRequestHooks(context);
+			}
 			const requestInit = await this.createRequest(requestData, context, method, options);
 
 			let response: Response;
@@ -521,12 +665,32 @@ export class TempoChannel extends BaseChannel {
 
 			// Validate response headers
 			await this.processResponseHeaders(response, context, method.type);
-			// Deserialize the response based on the content type
-			const responseData = new Uint8Array(await response.arrayBuffer());
-			const responseBody: TResponse = method.deserialize(responseData);
-			// Return the deserialized response object
-			return responseBody;
+			if (response.body === null) {
+				throw new TempoError(TempoStatusCode.INTERNAL, 'response body is null');
+			}
+			const body = response.body;
+			return tempoStream.readTempoStream(
+				body,
+				async (buffer: Uint8Array) => {
+					if (buffer.length > this.maxReceiveMessageSize) {
+						throw new TempoError(
+							TempoStatusCode.RESOURCE_EXHAUSTED,
+							`received message larger than ${this.maxReceiveMessageSize} bytes`,
+						);
+					}
+					const record = method.deserialize(buffer);
+					if (this.hooks !== undefined) {
+						await this.hooks.executeDecodeHooks(context, record);
+					}
+					return record;
+				},
+				options?.deadline,
+				options?.controller,
+			);
 		} catch (e) {
+			if (this.hooks !== undefined && e instanceof Error) {
+				this.hooks.executeErrorHooks(context, e);
+			}
 			if (e instanceof TempoError) {
 				throw e;
 			}
@@ -540,107 +704,6 @@ export class TempoChannel extends BaseChannel {
 			throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', { data: e });
 		}
 	}
-
-	/**
-	 * {@inheritDoc BaseChannel.startClientStream}
-	 */
-	public override async startClientStream<TRequest extends BebopRecord, TResponse extends BebopRecord>(
-		generator: () => AsyncGenerator<TRequest, void, undefined>,
-		context: ClientContext,
-		method: MethodInfo<TRequest, TResponse>,
-		options?: CallOptions | undefined,
-	): Promise<TResponse> {
-		if (!supportsRequestStreams) {
-			throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
-		}
-		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
-		tempoStream.writeTempoStream(
-			transformStream.writable,
-			generator(),
-			(payload: TRequest) => method.serialize(payload),
-			options?.deadline,
-			options?.controller,
-		);
-		const requestInit = await this.createRequest(transformStream.readable, context, method, options);
-		let response: Response;
-		if (options?.deadline) {
-			response = await options.deadline.executeWithinDeadline(async () => {
-				return await this.fetchData(requestInit);
-			}, options.controller);
-		} else {
-			// Otherwise, just execute the request indefinitely
-			response = await this.fetchData(requestInit);
-		}
-		// Validate response headers
-		await this.processResponseHeaders(response, context, method.type);
-		// Deserialize the response based on the content type
-		const responseData = new Uint8Array(await response.arrayBuffer());
-		const responseBody: TResponse = method.deserialize(responseData);
-		// Return the deserialized response object
-		return responseBody;
-	}
-	/**
-	 * {@inheritDoc BaseChannel.startServerStream}
-	 */
-	public override async startServerStream<TRequest extends BebopRecord, TResponse extends BebopRecord>(
-		request: TRequest,
-		context: ClientContext,
-		method: MethodInfo<TRequest, TResponse>,
-		options?: CallOptions | undefined,
-	): Promise<AsyncGenerator<TResponse, void, undefined>> {
-		// Prepare request data based on content type
-		const requestData: Uint8Array = method.serialize(request);
-
-		const requestInit = await this.createRequest(requestData, context, method, options);
-
-		let response: Response;
-		// If the retry policy is set, execute the request with retries
-		if (options?.retryPolicy) {
-			response = await this.executeWithRetry(
-				async (retryAttempt: number) => {
-					if (retryAttempt > 0) {
-						context.outgoingMetadata.set('tempo-previous-rpc-attempts', String(retryAttempt));
-						if (requestInit.headers instanceof Headers) {
-							requestInit.headers.set('custom-metadata', context.outgoingMetadata.toHttpHeader());
-						}
-					}
-					return await this.fetchData(requestInit);
-				},
-				options.retryPolicy,
-				options.deadline,
-				options.controller,
-			);
-			// If the deadline is set, execute the request within the deadline
-		} else if (options?.deadline) {
-			response = await options.deadline.executeWithinDeadline(async () => {
-				return await this.fetchData(requestInit);
-			}, options.controller);
-		} else {
-			// Otherwise, just execute the request indefinitely
-			response = await this.fetchData(requestInit);
-		}
-
-		// Validate response headers
-		await this.processResponseHeaders(response, context, method.type);
-		if (response.body === null) {
-			throw new TempoError(TempoStatusCode.INTERNAL, 'response body is null');
-		}
-		const body = response.body;
-		return tempoStream.readTempoStream(
-			body,
-			(buffer: Uint8Array) => {
-				if (buffer.length > this.maxReceiveMessageSize) {
-					throw new TempoError(
-						TempoStatusCode.RESOURCE_EXHAUSTED,
-						`received message larger than ${this.maxReceiveMessageSize} bytes`,
-					);
-				}
-				return method.deserialize(buffer);
-			},
-			options?.deadline,
-			options?.controller,
-		);
-	}
 	/**
 	 * {@inheritDoc BaseChannel.startDuplexStream}
 	 */
@@ -650,46 +713,70 @@ export class TempoChannel extends BaseChannel {
 		method: MethodInfo<TRequest, TResponse>,
 		options?: CallOptions | undefined,
 	): Promise<AsyncGenerator<TResponse, void, undefined>> {
-		if (!supportsRequestStreams) {
-			throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
-		}
-		const transformStream = new TransformStream<Uint8Array, Uint8Array>();
-		tempoStream.writeTempoStream(
-			transformStream.writable,
-			generator(),
-			(payload: TRequest) => method.serialize(payload),
-			options?.deadline,
-			options?.controller,
-		);
-		const requestInit = await this.createRequest(transformStream.readable, context, method, options);
-		let response: Response;
-		if (options?.deadline) {
-			response = await options.deadline.executeWithinDeadline(async () => {
-				return await this.fetchData(requestInit);
-			}, options.controller);
-		} else {
-			// Otherwise, just execute the request indefinitely
-			response = await this.fetchData(requestInit);
-		}
-		// Validate response headers
-		await this.processResponseHeaders(response, context, method.type);
-		if (response.body === null) {
-			throw new TempoError(TempoStatusCode.INTERNAL, 'response body is null');
-		}
-		const body = response.body;
-		return tempoStream.readTempoStream(
-			body,
-			(buffer: Uint8Array) => {
-				if (buffer.length > this.maxReceiveMessageSize) {
-					throw new TempoError(
-						TempoStatusCode.RESOURCE_EXHAUSTED,
-						`received message larger than ${this.maxReceiveMessageSize} bytes`,
-					);
+		try {
+			if (!supportsRequestStreams) {
+				throw new TempoError(TempoStatusCode.UNIMPLEMENTED, 'request streams are not supported in this environment');
+			}
+			const transformStream = new TransformStream<Uint8Array, Uint8Array>();
+			tempoStream.writeTempoStream(
+				transformStream.writable,
+				generator(),
+				(payload: TRequest) => method.serialize(payload),
+				options?.deadline,
+				options?.controller,
+			);
+			if (this.hooks !== undefined) {
+				await this.hooks.executeRequestHooks(context);
+			}
+			const requestInit = await this.createRequest(transformStream.readable, context, method, options);
+			let response: Response;
+			if (options?.deadline) {
+				response = await options.deadline.executeWithinDeadline(async () => {
+					return await this.fetchData(requestInit);
+				}, options.controller);
+			} else {
+				// Otherwise, just execute the request indefinitely
+				response = await this.fetchData(requestInit);
+			}
+			// Validate response headers
+			await this.processResponseHeaders(response, context, method.type);
+			if (response.body === null) {
+				throw new TempoError(TempoStatusCode.INTERNAL, 'response body is null');
+			}
+			const body = response.body;
+			return tempoStream.readTempoStream(
+				body,
+				async (buffer: Uint8Array) => {
+					if (buffer.length > this.maxReceiveMessageSize) {
+						throw new TempoError(
+							TempoStatusCode.RESOURCE_EXHAUSTED,
+							`received message larger than ${this.maxReceiveMessageSize} bytes`,
+						);
+					}
+					const record = method.deserialize(buffer);
+					if (this.hooks !== undefined) {
+						await this.hooks.executeDecodeHooks(context, record);
+					}
+					return record;
+				},
+				options?.deadline,
+				options?.controller,
+			);
+		} catch (e) {
+			if (this.hooks !== undefined && e instanceof Error) {
+				this.hooks.executeErrorHooks(context, e);
+			}
+			if (e instanceof TempoError) {
+				throw e;
+			}
+			if (e instanceof Error) {
+				if (e.name === 'AbortError') {
+					throw new TempoError(TempoStatusCode.ABORTED, 'RPC fetch aborted', e);
+				} else {
+					throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', e);
 				}
-				return method.deserialize(buffer);
-			},
-			options?.deadline,
-			options?.controller,
-		);
+			}
+			throw new TempoError(TempoStatusCode.UNKNOWN, 'an unknown error occurred', { data: e });
+		}
 	}
 }

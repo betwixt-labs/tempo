@@ -1,7 +1,8 @@
 import { TempoError, TempoLogger, TempoStatusCode } from '@tempojs/common';
 import { ServiceRegistry } from './registry';
 import { AuthInterceptor } from './intercept';
-import { Metadata } from '@tempojs/common';
+import { Metadata, HookRegistry } from '@tempojs/common';
+import { ServerContext } from './context';
 
 /**
  * Interface defining the configuration options for a TempoRouter instance.
@@ -67,6 +68,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	protected readonly maxReceiveMessageSize: number;
 	protected readonly maxSendMessageSize?: number;
 	protected readonly maxRetryAttempts: number;
+	protected hooks?: HookRegistry<ServerContext, TEnvironment>;
 
 	/**
 	 * Constructs a new BaseRouter instance.
@@ -155,5 +157,13 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			return new Metadata();
 		}
 		return Metadata.fromHttpHeader(value);
+	}
+
+	/**
+	 * Defines a hook registry for the router.
+	 * @param hooks - The hook registry to be used.
+	 */
+	public useHooks(hooks: HookRegistry<ServerContext, TEnvironment>): void {
+		this.hooks = hooks;
 	}
 }

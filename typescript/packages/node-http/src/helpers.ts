@@ -15,7 +15,7 @@ import { Readable, Writable } from 'stream';
  */
 export async function* readTempoStream<TRecord extends BebopRecord>(
 	stream: Readable,
-	decoder: (buffer: Uint8Array) => TRecord,
+	decoder: (buffer: Uint8Array) => Promise<TRecord>,
 	deadline?: Deadline,
 	abortController?: AbortController,
 ): AsyncGenerator<TRecord, void, undefined> {
@@ -65,7 +65,7 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 					if (writeIndex - readIndex < payloadSize) {
 						break;
 					}
-					yield decoder(buffer.subarray(readIndex, readIndex + payloadSize));
+					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
 					readIndex += payloadSize;
 				}
 			}
