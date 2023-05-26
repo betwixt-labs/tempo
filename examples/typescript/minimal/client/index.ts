@@ -2,9 +2,7 @@ import { TempoChannel } from "@tempojs/client";
 import { GreeterClient } from "../shared";
 
 // Establish a connection to the server using TempoChannel
-const channel = TempoChannel.forAddress("http://localhost:3000", {
-  contentType: "bebop",
-});
+const channel = TempoChannel.forAddress("http://localhost:3000");
 
 // Get the GreeterClient from the channel
 const client = channel.getClient(GreeterClient);
