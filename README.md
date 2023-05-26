@@ -51,7 +51,6 @@ Tempo allows you to easily build & consume low-latency, cross-platform, and full
 
 **👉 For more information check out the [wiki](https://github.com/betwixt-labs/tempo/wiki). 👈**
 
-
 ### Goals
 
 - 🌐&nbsp; Ensure compatibility with popular serverless backends, such as Next.js, AWS Lambda, and others, to maximize flexibility and adaptability.
@@ -63,16 +62,15 @@ Tempo allows you to easily build & consume low-latency, cross-platform, and full
 
 ### Progress
 
-| Language/Framework    | Status                   | Server Backends    | Progress                                                                                               |
-| --------------------- | ------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------ |
-| Typescript/Javascript | 🚧 Under construction 🚧 | Cloudflare Workers | [🚧 Under construction](https://github.com/betwixt-labs/tempo/tree/main/typescript/packages/cf-router) |
-|                       |                          | NodeJS HTTP        | [🚧 Under construction](https://github.com/betwixt-labs/tempo/tree/main/typescript/packages/node-http) |
-|                       |                          | NextJS             | ❌ Not started                                                                                         |
-|                       |                          | Deno               | ❌ Not started                                                                                         |
-|                       |                          | ...                | ❌ Not started                                                                                         |
-| C#                    | ❌ Not started           | ASP.NET            | ❌ Not started                                                                                         |
-|                       |                          | ...                | ❌ Not started                                                                                         |
-
+| Language/Framework    | Status                   | Server Backends    | Progress                                                                            |
+| --------------------- | ------------------------ | ------------------ | ----------------------------------------------------------------------------------- |
+| Typescript/Javascript | 🚧 Under construction 🚧 | Cloudflare Workers | [✅](https://github.com/betwixt-labs/tempo/tree/main/typescript/packages/cf-router) |
+|                       |                          | NodeJS HTTP        | [✅](https://github.com/betwixt-labs/tempo/tree/main/typescript/packages/node-http) |
+|                       |                          | NextJS             | ❌ Not started                                                                      |
+|                       |                          | Deno               | ❌ Not started                                                                      |
+|                       |                          | ...                | ❌ Not started                                                                      |
+| C#                    | 🚧 Under construction    | ASP.NET            | 🚧 Under construction                                                               |
+|                       |                          | ...                | ❌ Not started                                                                      |
 
 ## 🌟 Join the Tempo Community
 
