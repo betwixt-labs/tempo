@@ -4,7 +4,7 @@
 //
 //
 //       bebopc version:
-//           2.6.2
+//           2.7.0
 //
 //
 //       bebopc source:
@@ -124,8 +124,14 @@ export class HelloResponse implements IHelloResponse {
 /**
  * `Greeter` is a service that provides a method for generating greeting messages.
  */
+/**
+ * `Greeter` is a service that provides a method for generating greeting messages.
+ */
 export abstract class BaseGreeterService extends BaseService {
   public static readonly serviceName = 'GreeterService';
+  /**
+   * `sayHello` is a method that takes a `HelloRequest` and returns a `HelloResponse`.
+   */
   public abstract sayHello(record: IHelloRequest, context: ServerContext): Promise<IHelloResponse>;
   public abstract sayHelloClient(records: () => AsyncGenerator<IHelloRequest, void, undefined>, context: ServerContext): Promise<IHelloResponse>;
   public abstract sayHelloServer(record: IHelloRequest, context: ServerContext): AsyncGenerator<IHelloResponse, void, undefined>;
@@ -157,16 +163,16 @@ export class TempoServiceRegistry extends ServiceRegistry {
     serviceName = 'GreeterService';
     service = TempoServiceRegistry.tryGetService(serviceName);
     if (!(service instanceof BaseGreeterService)) {
-      throw new Error('todo');
+      throw new Error(`No service named '${serviceName}'was registered with the TempoServiceRegistry`);
     }
     service.setLogger(this.logger.clone(serviceName));
     TempoServiceRegistry.staticServiceInstances.delete(serviceName);
     this.serviceInstances.push(service);
-    if (this.methods.has(1225452181)) {
-      const conflictService = this.methods.get(1225452181)!;
+    if (this.methods.has(1308554837)) {
+      const conflictService = this.methods.get(1308554837)!;
       throw new Error(`GreeterService.sayHello collides with ${conflictService.service}.${conflictService.name}`)
     }
-    this.methods.set(1225452181, {
+    this.methods.set(1308554837, {
       name: 'sayHello',
       service: serviceName,
       invoke: service.sayHello,
@@ -174,11 +180,11 @@ export class TempoServiceRegistry extends ServiceRegistry {
       deserialize: HelloRequest.decode,
       type: MethodType.Unary,
     } as BebopMethod<IHelloRequest, IHelloResponse>);
-    if (this.methods.has(3391540084)) {
-      const conflictService = this.methods.get(3391540084)!;
+    if (this.methods.has(3429833156)) {
+      const conflictService = this.methods.get(3429833156)!;
       throw new Error(`GreeterService.sayHelloClient collides with ${conflictService.service}.${conflictService.name}`)
     }
-    this.methods.set(3391540084, {
+    this.methods.set(3429833156, {
       name: 'sayHelloClient',
       service: serviceName,
       invoke: service.sayHelloClient,
@@ -186,11 +192,11 @@ export class TempoServiceRegistry extends ServiceRegistry {
       deserialize: HelloRequest.decode,
       type: MethodType.ClientStream,
     } as BebopMethod<IHelloRequest, IHelloResponse>);
-    if (this.methods.has(838180561)) {
-      const conflictService = this.methods.get(838180561)!;
+    if (this.methods.has(3393365588)) {
+      const conflictService = this.methods.get(3393365588)!;
       throw new Error(`GreeterService.sayHelloServer collides with ${conflictService.service}.${conflictService.name}`)
     }
-    this.methods.set(838180561, {
+    this.methods.set(3393365588, {
       name: 'sayHelloServer',
       service: serviceName,
       invoke: service.sayHelloServer,
@@ -198,11 +204,11 @@ export class TempoServiceRegistry extends ServiceRegistry {
       deserialize: HelloRequest.decode,
       type: MethodType.ServerStream,
     } as BebopMethod<IHelloRequest, IHelloResponse>);
-    if (this.methods.has(2725697664)) {
-      const conflictService = this.methods.get(2725697664)!;
+    if (this.methods.has(2551291458)) {
+      const conflictService = this.methods.get(2551291458)!;
       throw new Error(`GreeterService.sayHelloDuplex collides with ${conflictService.service}.${conflictService.name}`)
     }
-    this.methods.set(2725697664, {
+    this.methods.set(2551291458, {
       name: 'sayHelloDuplex',
       service: serviceName,
       invoke: service.sayHelloDuplex,
@@ -216,7 +222,13 @@ export class TempoServiceRegistry extends ServiceRegistry {
     return this.methods.get(id);
   }
 }
+/**
+ * `Greeter` is a service that provides a method for generating greeting messages.
+ */
 export interface IGreeterClient {
+  /**
+   * `sayHello` is a method that takes a `HelloRequest` and returns a `HelloResponse`.
+   */
   sayHello(request: IHelloRequest): Promise<IHelloResponse>;
   sayHello(request: IHelloRequest, metadata: Metadata): Promise<IHelloResponse>;
   sayHelloClient(request: () => AsyncGenerator<IHelloRequest, void, undefined>): Promise<IHelloResponse>;
@@ -227,15 +239,21 @@ export interface IGreeterClient {
   sayHelloDuplex(request: () => AsyncGenerator<IHelloRequest, void, undefined>, metadata: Metadata): Promise<AsyncGenerator<IHelloResponse, void, undefined>>;
 }
 
+/**
+ * `Greeter` is a service that provides a method for generating greeting messages.
+ */
 export class GreeterClient extends BaseClient implements IGreeterClient {
   private static readonly sayHelloMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
     name: 'sayHello',
     service: 'GreeterService',
-    id: 1225452181,
+    id: 1308554837,
     serialize: HelloRequest.encode,
     deserialize: HelloResponse.decode,
     type: MethodType.Unary,
   }
+  /**
+   * `sayHello` is a method that takes a `HelloRequest` and returns a `HelloResponse`.
+   */
   async sayHello(request: IHelloRequest): Promise<IHelloResponse>;
   async sayHello(request: IHelloRequest, options: CallOptions): Promise<IHelloResponse>;
   async sayHello(request: IHelloRequest, options?: CallOptions): Promise<IHelloResponse> {
@@ -244,7 +262,7 @@ export class GreeterClient extends BaseClient implements IGreeterClient {
   private static readonly sayHelloClientMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
     name: 'sayHelloClient',
     service: 'GreeterService',
-    id: 3391540084,
+    id: 3429833156,
     serialize: HelloRequest.encode,
     deserialize: HelloResponse.decode,
     type: MethodType.ClientStream,
@@ -257,7 +275,7 @@ export class GreeterClient extends BaseClient implements IGreeterClient {
   private static readonly sayHelloServerMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
     name: 'sayHelloServer',
     service: 'GreeterService',
-    id: 838180561,
+    id: 3393365588,
     serialize: HelloRequest.encode,
     deserialize: HelloResponse.decode,
     type: MethodType.ServerStream,
@@ -270,7 +288,7 @@ export class GreeterClient extends BaseClient implements IGreeterClient {
   private static readonly sayHelloDuplexMethodInfo: MethodInfo<IHelloRequest, IHelloResponse> = {
     name: 'sayHelloDuplex',
     service: 'GreeterService',
-    id: 2725697664,
+    id: 2551291458,
     serialize: HelloRequest.encode,
     deserialize: HelloResponse.decode,
     type: MethodType.DuplexStream,
