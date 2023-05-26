@@ -7,8 +7,12 @@ import { IncomingHttpHeaders } from 'http';
  * @interface IFetchHeaders
  */
 interface IFetchHeaders {
-	get(name: string): string | null;
+	get(name: string): string | undefined;
 	has(name: string): boolean;
+	forEach(callback: (value: string, name: string) => void): void;
+	keys(): IterableIterator<string>;
+	values(): IterableIterator<string>;
+	entries(): IterableIterator<[string, string]>;
 }
 
 /**
@@ -20,7 +24,7 @@ interface IFetchHeaders {
  * @implements {IFetchHeaders}
  */
 export class FetchHeadersAdapter implements IFetchHeaders {
-	private headers: Map<string, string>;
+	private readonly headers: Map<string, string>;
 
 	/**
 	 * Creates an instance of FetchHeadersAdapter.
@@ -38,15 +42,14 @@ export class FetchHeadersAdapter implements IFetchHeaders {
 	}
 
 	/**
-	 * Retrieves the header value associated with the provided header name.
+	 * Retrieves the first header value associated with the provided header name.
 	 *
 	 * @param {string} name - The name of the header to retrieve.
-	 * @returns {string | null} The value of the header, or null if it is not found.
+	 * @returns {string | undefined} The value of the header, or undefined if it is not found.
 	 * @memberof FetchHeadersAdapter
 	 */
-	get(name: string): string | null {
-		const value = this.headers.get(name.toLowerCase());
-		return value !== undefined ? value : null;
+	get(name: string): string | undefined {
+		return this.headers.get(name.toLowerCase());
 	}
 
 	/**
@@ -58,5 +61,45 @@ export class FetchHeadersAdapter implements IFetchHeaders {
 	 */
 	has(name: string): boolean {
 		return this.headers.has(name.toLowerCase());
+	}
+
+	/**
+	 * Executes the provided callback function for each header.
+	 *
+	 * @param {(value: string, name: string) => void} callback - The callback function to execute for each header.
+	 * @memberof FetchHeadersAdapter
+	 */
+	forEach(callback: (value: string, name: string) => void): void {
+		this.headers.forEach(callback);
+	}
+
+	/**
+	 * Returns an iterator that contains the names (keys) of all headers.
+	 *
+	 * @returns {IterableIterator<string>} An iterator for the names (keys) of all headers.
+	 * @memberof FetchHeadersAdapter
+	 */
+	*keys(): IterableIterator<string> {
+		yield* this.headers.keys();
+	}
+
+	/**
+	 * Returns an iterator that contains the values of all headers.
+	 *
+	 * @returns {IterableIterator<string>} An iterator for the values of all headers.
+	 * @memberof FetchHeadersAdapter
+	 */
+	*values(): IterableIterator<string> {
+		yield* this.headers.values();
+	}
+
+	/**
+	 * Returns an iterator that contains all key/value pairs of the headers.
+	 *
+	 * @returns {IterableIterator<[string, string]>} An iterator for all key/value pairs of the headers.
+	 * @memberof FetchHeadersAdapter
+	 */
+	*entries(): IterableIterator<[string, string]> {
+		yield* this.headers.entries();
 	}
 }
