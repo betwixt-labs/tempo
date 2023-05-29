@@ -1,7 +1,14 @@
-import { TempoError, TempoLogger, TempoStatusCode } from '@tempojs/common';
+import {
+	TempoError,
+	TempoLogger,
+	TempoStatusCode,
+	TempoVersion,
+	TempoUtil,
+	Metadata,
+	HookRegistry,
+} from '@tempojs/common';
 import { ServiceRegistry } from './registry';
 import { AuthInterceptor } from './intercept';
-import { Metadata, HookRegistry } from '@tempojs/common';
 import { ServerContext } from './context';
 
 /**
@@ -44,12 +51,18 @@ export class TempoRouterConfiguration {
 	public maxRetryAttempts?: number;
 
 	/**
+	 * Optional flag to indicate whether the tempo version, runtime, and variant should be exposed in respones via X-Powered-By (and if the GET endpoint should be enabled). Defaults to true.
+	 */
+	public exposeTempo?: boolean;
+
+	/**
 	 * Constructs a new instance of TempoRouterConfiguration with default values.
 	 */
 	constructor() {
 		this.maxReceiveMessageSize = TempoRouterConfiguration.defaultMaxReceiveMessageSize;
 		this.maxRetryAttempts = TempoRouterConfiguration.defaultMaxRetryAttempts;
 		this.maxRetryAttempts = TempoRouterConfiguration.defaultMaxRetryAttempts;
+		this.exposeTempo = true;
 	}
 }
 
@@ -68,7 +81,10 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	protected readonly maxReceiveMessageSize: number;
 	protected readonly maxSendMessageSize?: number;
 	protected readonly maxRetryAttempts: number;
+	protected readonly exposeTempo: boolean;
 	protected hooks?: HookRegistry<ServerContext, TEnvironment>;
+	protected poweredByHeader = 'X-Powered-By';
+	protected poweredByHeaderValue?: string;
 
 	/**
 	 * Constructs a new BaseRouter instance.
@@ -91,6 +107,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			this.maxSendMessageSize = configuration.maxSendMessageSize;
 		}
 		this.maxRetryAttempts = configuration.maxRetryAttempts ?? TempoRouterConfiguration.defaultMaxRetryAttempts;
+		this.exposeTempo = configuration.exposeTempo ??= true;
 		this.registry.init();
 	}
 
@@ -165,5 +182,11 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	 */
 	public useHooks(hooks: HookRegistry<ServerContext, TEnvironment>): void {
 		this.hooks = hooks;
+	}
+
+	public definePoweredByHeader(variant: string): void {
+		this.poweredByHeaderValue = TempoUtil.buildUserAgent('javascript', TempoVersion, variant, {
+			runtime: TempoUtil.getEnvironmentName(),
+		});
 	}
 }

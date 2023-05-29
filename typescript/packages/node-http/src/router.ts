@@ -6,6 +6,7 @@ import {
 	TempoLogger,
 	TempoStatusCode,
 	TempoUtil,
+	TempoVersion,
 	stringifyCredentials,
 } from '@tempojs/common';
 import {
@@ -17,7 +18,7 @@ import {
 	ServerContext,
 	BebopMethodAny,
 } from '@tempojs/server';
-import { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
+import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { FetchHeadersAdapter } from './header';
 import { readTempoStream, writeTempoStream } from './helpers';
 import { BebopRecord } from 'bebop';
@@ -30,6 +31,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		authInterceptor?: AuthInterceptor,
 	) {
 		super(logger, registry, configuration, authInterceptor);
+		this.definePoweredByHeader('node-http');
 	}
 
 	/**
@@ -44,31 +46,28 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		return new FetchHeadersAdapter(headers);
 	}
 
-	private setCorsHeaders(headers: OutgoingHttpHeaders, origin: string): void {
+	private setCorsHeaders(response: ServerResponse, origin: string): void {
 		if (this.corsEnabled) {
 			if (this.allowedCorsOrigins !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
 					throw new TempoError(TempoStatusCode.FAILED_PRECONDITION, 'origin not allowed');
 				}
-				headers['Access-Control-Allow-Origin'] = origin;
-				headers['Vary'] = 'Origin';
-				headers['Access-Control-Allow-Credentials'] = 'true';
+				response.setHeader('Access-Control-Allow-Origin', origin);
+				response.setHeader('Vary', 'Origin');
+				response.setHeader('Access-Control-Allow-Credentials', 'true');
 			} else {
-				headers['Access-Control-Allow-Origin'] = '*';
+				response.setHeader('Access-Control-Allow-Origin', '*');
 			}
 		}
-		headers['Access-Control-Expose-Headers'] =
-			'Content-Encoding, Content-Length, Content-Type, tempo-status, tempo-message, custom-metadata, tempo-credentials';
+		response.setHeader(
+			'Access-Control-Expose-Headers',
+			'Content-Encoding, Content-Length, Content-Type, tempo-status, tempo-message, custom-metadata, tempo-credentials',
+		);
 	}
 
 	private prepareOptionsResponse(request: IncomingMessage, response: ServerResponse): void {
 		const origin = request.headers.origin;
 		const preFlightRequestHeaders = request.headers['access-control-request-headers'];
-
-		// Initialize a new ServerResponse
-		let statusCode: number;
-		let headers: OutgoingHttpHeaders;
-
 		if (
 			origin !== undefined &&
 			request.headers['access-control-request-method'] !== undefined &&
@@ -76,36 +75,24 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		) {
 			// Handle CORS pre-flight request.
 			this.logger.trace('Handling CORS pre-flight request');
-			headers = {
-				'Access-Control-Allow-Methods': 'POST, OPTIONS',
-				'Access-Control-Allow-Headers': preFlightRequestHeaders,
-				'Access-Control-Allow-Credentials': 'true',
-			};
-
+			response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+			response.setHeader('Access-Control-Allow-Headers', preFlightRequestHeaders);
+			response.setHeader('Access-Control-Allow-Credentials', 'true');
 			if (this.allowedCorsOrigins !== undefined && origin !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
 					throw new Error('Origin not allowed');
 				}
-				headers['Access-Control-Allow-Origin'] = origin;
-				headers['Vary'] = 'Origin';
+				response.setHeader('Access-Control-Allow-Origin', origin);
+				response.setHeader('Vary', 'Origin');
 				this.logger.trace(`Allowing CORS for origin ${origin}`);
 			} else {
-				headers['Access-Control-Allow-Origin'] = '*';
+				response.setHeader('Access-Control-Allow-Origin', '*');
 			}
 
-			statusCode = 204; // 204 No Content is the standard status for successful pre-flight requests
+			response.statusCode = 204; // 204 No Content is the standard status for successful pre-flight requests
 		} else {
 			// Handle standard OPTIONS request.
-			statusCode = 200; // 200 OK for standard OPTIONS request
-			headers = {
-				Allow: 'POST, OPTIONS',
-			};
-		}
-
-		response.statusCode = statusCode;
-		// Set the headers
-		for (const [key, value] of Object.entries(headers)) {
-			response.setHeader(key, value as string);
+			response.statusCode = 200; // 200 OK for standard OPTIONS request
 		}
 	}
 
@@ -239,11 +226,35 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		return method.invoke(generator, context);
 	}
 
+	private handlePoweredBy(request: IncomingMessage, response: ServerResponse): void {
+		const origin = request.headers.origin;
+		if (origin !== undefined) {
+			this.setCorsHeaders(response, origin);
+		}
+		response.setHeader('Content-Type', 'application/json');
+		response.setHeader('Cache-Control', 'max-age=31536000');
+		response.statusCode = 200;
+		response.write(
+			JSON.stringify({
+				tempo: TempoVersion,
+				language: 'javascript',
+				runtime: TempoUtil.getEnvironmentName(),
+				variant: 'cloudflare-workers',
+			}),
+		);
+	}
+
 	public override async process(request: IncomingMessage, response: ServerResponse, env: TEnv) {
 		// Check if the request is an OPTIONS request
 
 		if (request.method === 'OPTIONS') {
 			this.prepareOptionsResponse(request, response);
+			response.flushHeaders();
+			response.end();
+			return;
+		}
+		if (this.exposeTempo && request.method === 'GET') {
+			this.handlePoweredBy(request, response);
 			response.flushHeaders();
 			response.end();
 			return;
@@ -313,29 +324,27 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
 				// it is now safe to begin work on the response
-				const responseHeaders: OutgoingHttpHeaders = {};
 				if (origin !== undefined) {
-					this.setCorsHeaders(responseHeaders, origin);
+					this.setCorsHeaders(response, origin);
 				}
-				responseHeaders['content-type'] = `application/tempo+${contentType}`;
+				if (this.exposeTempo && this.poweredByHeaderValue !== undefined) {
+					response.setHeader(this.poweredByHeader, this.poweredByHeaderValue);
+				}
+				response.setHeader('content-type', `application/tempo+${contentType}`);
 
 				const outgoingCredentials = context.getOutgoingCredentials();
 				if (outgoingCredentials) {
-					responseHeaders['tempo-credentials'] = stringifyCredentials(outgoingCredentials);
+					response.setHeader('tempo-credentials', stringifyCredentials(outgoingCredentials));
 				}
-				responseHeaders['tempo-status'] = '0';
-				responseHeaders['tempo-message'] = 'OK';
+				response.setHeader('tempo-status', '0');
+				response.setHeader('tempo-message', 'OK');
 				response.statusCode = 200;
 				if (this.hooks !== undefined) {
 					await this.hooks.executeResponseHooks(context);
 				}
 				outgoingMetadata.freeze();
 				if (outgoingMetadata.size() > 0) {
-					responseHeaders['custom-metadata'] = outgoingMetadata.toHttpHeader();
-				}
-				// Set the headers
-				for (const [key, value] of Object.entries(responseHeaders)) {
-					response.setHeader(key, value as string);
+					response.setHeader('custom-metadata', outgoingMetadata.toHttpHeader());
 				}
 				if (recordGenerator !== undefined) {
 					writeTempoStream(
@@ -381,16 +390,15 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			if (e instanceof Error && this.hooks !== undefined) {
 				await this.hooks.executeErrorHooks(undefined, e);
 			}
-			const responseHeaders: OutgoingHttpHeaders = {};
-			responseHeaders['tempo-status'] = `${status}`;
-			responseHeaders['tempo-message'] = message;
+			if (this.exposeTempo && this.poweredByHeaderValue !== undefined) {
+				response.setHeader(this.poweredByHeader, this.poweredByHeaderValue);
+			}
+			response.setHeader('tempo-status', `${status}`);
+			response.setHeader('tempo-message', message);
 			if (origin !== undefined) {
-				this.setCorsHeaders(responseHeaders, origin);
+				this.setCorsHeaders(response, origin);
 			}
 			response.statusCode = TempoError.codeToHttpStatus(status);
-			for (const [key, value] of Object.entries(responseHeaders)) {
-				response.setHeader(key, value as string);
-			}
 		}
 	}
 
