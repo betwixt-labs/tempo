@@ -8,6 +8,7 @@ import {
 	Deadline,
 	MethodType,
 	tempoStream,
+	TempoVersion,
 } from '@tempojs/common';
 import {
 	BaseRouter,
@@ -28,6 +29,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		authInterceptor?: AuthInterceptor,
 	) {
 		super(logger, registry, configuration, authInterceptor);
+		this.definePoweredByHeader('cloudflare-workers');
 	}
 
 	/**
@@ -222,6 +224,28 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		return method.invoke(generator, context);
 	}
 
+	private handlePoweredBy(request: Request): Response {
+		const responseHeaders = new Headers();
+		const origin = request.headers.get('origin');
+		if (origin !== null) {
+			this.setCorsHeaders(responseHeaders, origin);
+		}
+		responseHeaders.set('Content-Type', 'application/json');
+		responseHeaders.set('Cache-Control', 'max-age=31536000');
+		return new Response(
+			JSON.stringify({
+				tempo: TempoVersion,
+				language: 'javascript',
+				runtime: TempoUtil.getEnvironmentName(),
+				variant: 'cloudflare-workers',
+			}),
+			{
+				status: 200,
+				headers: responseHeaders,
+			},
+		);
+	}
+
 	/**
 	 * Public function that handles Tempo requests by parsing and validating the request, invoking the appropriate method
 	 * with the appropriate context and sending a response back.
@@ -236,6 +260,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	override async handle(request: Request, env: TEnv): Promise<Response> {
 		if (this.corsEnabled && request.method === 'OPTIONS') {
 			return this.handleOptions(request);
+		}
+		if (this.exposeTempo && request.method === 'GET') {
+			return this.handlePoweredBy(request);
 		}
 		const origin = request.headers.get('origin');
 		try {
@@ -300,6 +327,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					recordGenerator = await this.invokeDuplexStreamMethod(request, context, method);
 				}
 				const responseHeaders = new Headers();
+				if (this.exposeTempo && this.poweredByHeaderValue !== undefined) {
+					responseHeaders.set(this.poweredByHeader, this.poweredByHeaderValue);
+				}
 				if (origin !== null) {
 					this.setCorsHeaders(responseHeaders, origin);
 				}
@@ -377,6 +407,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				await this.hooks.executeErrorHooks(undefined, e);
 			}
 			const responseHeaders = new Headers();
+			if (this.exposeTempo && this.poweredByHeaderValue !== undefined) {
+				responseHeaders.set(this.poweredByHeader, this.poweredByHeaderValue);
+			}
 			responseHeaders.set('tempo-status', `${status}`);
 			responseHeaders.set('tempo-message', message);
 			if (origin !== null) {
