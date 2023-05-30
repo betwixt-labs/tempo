@@ -239,7 +239,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 				tempo: TempoVersion,
 				language: 'javascript',
 				runtime: TempoUtil.getEnvironmentName(),
-				variant: 'cloudflare-workers',
+				variant: 'node-http',
 			}),
 		);
 	}
