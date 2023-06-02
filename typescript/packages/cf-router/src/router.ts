@@ -22,6 +22,7 @@ import {
 import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
+	private readonly poweredByString: string;
 	constructor(
 		logger: TempoLogger,
 		registry: ServiceRegistry,
@@ -30,6 +31,12 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	) {
 		super(logger, registry, configuration, authInterceptor);
 		this.definePoweredByHeader('cloudflare-workers');
+		this.poweredByString = JSON.stringify({
+			tempo: TempoVersion,
+			language: 'javascript',
+			runtime: TempoUtil.getEnvironmentName(),
+			variant: 'cloudflare-workers',
+		});
 	}
 
 	/**
@@ -232,18 +239,10 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		}
 		responseHeaders.set('Content-Type', 'application/json');
 		responseHeaders.set('Cache-Control', 'max-age=31536000');
-		return new Response(
-			JSON.stringify({
-				tempo: TempoVersion,
-				language: 'javascript',
-				runtime: TempoUtil.getEnvironmentName(),
-				variant: 'cloudflare-workers',
-			}),
-			{
-				status: 200,
-				headers: responseHeaders,
-			},
-		);
+		return new Response(this.poweredByString, {
+			status: 200,
+			headers: responseHeaders,
+		});
 	}
 
 	/**

@@ -24,6 +24,7 @@ import { readTempoStream, writeTempoStream } from './helpers';
 import { BebopRecord } from 'bebop';
 
 export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerResponse> {
+	private readonly poweredByString: string;
 	constructor(
 		logger: TempoLogger,
 		registry: ServiceRegistry,
@@ -32,6 +33,12 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 	) {
 		super(logger, registry, configuration, authInterceptor);
 		this.definePoweredByHeader('node-http');
+		this.poweredByString = JSON.stringify({
+			tempo: TempoVersion,
+			language: 'javascript',
+			runtime: TempoUtil.getEnvironmentName(),
+			variant: 'node-http',
+		});
 	}
 
 	/**
@@ -65,7 +72,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		);
 	}
 
-	private prepareOptionsResponse(request: IncomingMessage, response: ServerResponse): void {
+	private prepareOptionsResponse(request: IncomingMessage, response: ServerResponse): number {
 		const origin = request.headers.origin;
 		const preFlightRequestHeaders = request.headers['access-control-request-headers'];
 		if (
@@ -88,11 +95,10 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			} else {
 				response.setHeader('Access-Control-Allow-Origin', '*');
 			}
-
-			response.statusCode = 204; // 204 No Content is the standard status for successful pre-flight requests
+			return 204; // 204 No Content is the standard status for successful pre-flight requests
 		} else {
 			// Handle standard OPTIONS request.
-			response.statusCode = 200; // 200 OK for standard OPTIONS request
+			return 200; // 200 OK for standard OPTIONS request
 		}
 	}
 
@@ -233,30 +239,19 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		}
 		response.setHeader('Content-Type', 'application/json');
 		response.setHeader('Cache-Control', 'max-age=31536000');
-		response.statusCode = 200;
-		response.write(
-			JSON.stringify({
-				tempo: TempoVersion,
-				language: 'javascript',
-				runtime: TempoUtil.getEnvironmentName(),
-				variant: 'node-http',
-			}),
-		);
 	}
 
 	public override async process(request: IncomingMessage, response: ServerResponse, env: TEnv) {
 		// Check if the request is an OPTIONS request
-
 		if (request.method === 'OPTIONS') {
-			this.prepareOptionsResponse(request, response);
-			response.flushHeaders();
+			response.writeHead(this.prepareOptionsResponse(request, response));
 			response.end();
 			return;
 		}
 		if (this.exposeTempo && request.method === 'GET') {
 			this.handlePoweredBy(request, response);
-			response.flushHeaders();
-			response.end();
+			response.writeHead(200);
+			response.end(this.poweredByString);
 			return;
 		}
 		const origin = request.headers.origin;
@@ -338,7 +333,6 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 				}
 				response.setHeader('tempo-status', '0');
 				response.setHeader('tempo-message', 'OK');
-				response.statusCode = 200;
 				if (this.hooks !== undefined) {
 					await this.hooks.executeResponseHooks(context);
 				}
@@ -347,6 +341,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					response.setHeader('custom-metadata', outgoingMetadata.toHttpHeader());
 				}
 				if (recordGenerator !== undefined) {
+					response.writeHead(200);
 					writeTempoStream(
 						response,
 						recordGenerator,
@@ -364,6 +359,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					if (method.type === MethodType.Unary || method.type === MethodType.ClientStream) {
 						response.setHeader('content-length', String(responseData.length));
 					}
+					response.writeHead(200);
 					response.end(responseData);
 				}
 			};
@@ -398,7 +394,8 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			if (origin !== undefined) {
 				this.setCorsHeaders(response, origin);
 			}
-			response.statusCode = TempoError.codeToHttpStatus(status);
+			response.writeHead(TempoError.codeToHttpStatus(status));
+			response.end();
 		}
 	}
 

@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/cloudflare-worker-router",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -19,7 +19,7 @@
   "author": "andrew",
   "license": "",
   "dependencies": {
-    "@tempojs/server": "^0.0.3"
+    "@tempojs/server": "^0.0.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1"
