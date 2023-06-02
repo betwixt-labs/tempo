@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/common",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "tempo common",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
