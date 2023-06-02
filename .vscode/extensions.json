@@ -1,0 +1,12 @@
+{
+    "recommendations": [
+        "csharpier.csharpier-vscode",
+        "rainway.vscode-bebop",
+        "esbenp.prettier-vscode",
+        "ms-dotnettools.csharp",
+        "eamodio.gitlens",
+        "ms-vscode.powershell",
+        "foxundermoon.shell-format",
+        "timonwong.shellcheck"
+    ]
+}
