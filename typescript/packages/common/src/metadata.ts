@@ -150,6 +150,7 @@ export class Metadata {
 	 * Retrieves the values for a metadata entry with the given key.
 	 * @param key The metadata key. It will be converted to lowercase.
 	 * @returns An array of metadata values or undefined if the key does not exist.
+	 * @deprecated Use getBinaryValues or getTextValues instead.
 	 */
 	get(key: string): string[] | Uint8Array[] | undefined {
 		key = key.toLowerCase();
@@ -162,6 +163,27 @@ export class Metadata {
 		} else {
 			return values;
 		}
+	}
+
+	/**
+	 * Retrieves the binary values for a metadata entry with the given key.
+	 * @param key The metadata key. Case-insensitive.
+	 * @returns An array of binary metadata values or undefined if the key does not exist.
+	 */
+	getBinaryValues(key: string): Uint8Array[] | undefined {
+		if (!Metadata.isBinaryKey(key)) throw new Error('Attempted to get binary values with a text key');
+		key = key.toLowerCase();
+		return this.data.get(key)?.map((value) => Metadata.base64Decode(value));
+	}
+	/**
+	 * Retrieves the text values for a metadata entry with the given key.
+	 * @param key The metadata key. Case-insensitive.
+	 * @returns An array of text metadata values or undefined if the key does not exist.
+	 */
+	getTextValues(key: string): string[] | undefined {
+		if (Metadata.isBinaryKey(key)) throw new Error('Attempted to get text values with a binary key');
+		key = key.toLowerCase();
+		return this.data.get(key);
 	}
 
 	/**
