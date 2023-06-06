@@ -275,7 +275,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			const metadata =
 				metadataHeader && typeof metadataHeader === 'string' ? this.getCustomMetaData(metadataHeader) : new Metadata();
 
-			const previousAttempts = metadata.get('tempo-previous-rpc-attempts');
+			const previousAttempts = metadata.getTextValues('tempo-previous-rpc-attempts');
 			if (previousAttempts !== undefined && previousAttempts[0] !== undefined) {
 				const numberOfAttempts = TempoUtil.tryParseInt(previousAttempts[0]);
 				if (numberOfAttempts > this.maxRetryAttempts) {

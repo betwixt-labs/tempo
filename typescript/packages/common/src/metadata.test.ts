@@ -18,19 +18,21 @@ describe('Metadata', () => {
 
 	it('sets and gets binary values', () => {
 		const metadata = new Metadata();
-		const binaryValue1 = new TextEncoder().encode('value1');
-		const binaryValue2 = new TextEncoder().encode('value2');
+		const value1 = 'value1';
+		const value2 = 'value2';
+		const binaryValue1 = new TextEncoder().encode(value1);
+		const binaryValue2 = new TextEncoder().encode(value2);
 
 		metadata.set('key1-bin', binaryValue1);
 		metadata.set('Key2-bin', binaryValue2);
 
-		const valuesForKey1 = metadata.get('key1-bin');
-		const valuesForKey2 = metadata.get('Key2-bin');
+		const valuesForKey1 = metadata.get('key1-bin') as Uint8Array[];
+		const valuesForKey2 = metadata.get('Key2-bin') as Uint8Array[];
 
 		expect(valuesForKey1).toBeTruthy();
 		expect(valuesForKey2).toBeTruthy();
-		expect(new TextEncoder().encode(valuesForKey1![0]).toString()).toBe(binaryValue1.toString());
-		expect(new TextEncoder().encode(valuesForKey2![0]).toString()).toBe(binaryValue2.toString());
+		expect(new TextDecoder().decode(valuesForKey1![0])).toEqual(value1);
+		expect(new TextDecoder().decode(valuesForKey2![0])).toEqual(value2);
 	});
 
 	it('appends values', () => {
@@ -113,11 +115,11 @@ describe('Metadata', () => {
 		const httpHeader = metadata.toHttpHeader();
 		const metadataFromHeader = Metadata.fromHttpHeader(httpHeader);
 
-		const valuesForKey = metadataFromHeader.get(key);
+		const valuesForKey = metadataFromHeader.get(key) as Uint8Array[];
 
 		expect(valuesForKey).toBeTruthy();
 		expect(valuesForKey![0]).toBeDefined();
-		expect(valuesForKey![0]).toEqual(new TextDecoder().decode(value));
+		expect(new TextDecoder().decode(valuesForKey![0])).toStrictEqual(new TextDecoder().decode(value));
 	});
 
 	it('toHttpHeader and fromHttpHeader test with binary data', () => {
@@ -133,14 +135,14 @@ describe('Metadata', () => {
 		const httpHeader = metadata.toHttpHeader();
 		const metadataFromHeader = Metadata.fromHttpHeader(httpHeader);
 
-		const valuesForKey1 = metadataFromHeader.get(key1);
-		const valuesForKey2 = metadataFromHeader.get(key2);
+		const valuesForKey1 = metadataFromHeader.get(key1) as string[];
+		const valuesForKey2 = metadataFromHeader.get(key2) as Uint8Array[];
 
 		expect(valuesForKey1).toBeTruthy();
-		expect(valuesForKey1![0]).toBe(value1);
+		expect(valuesForKey1![0]).toStrictEqual(value1);
 
 		expect(valuesForKey2).toBeTruthy();
-		expect(valuesForKey2![0]).toEqual(new TextDecoder().decode(value2));
+		expect(new TextDecoder().decode(valuesForKey2![0])).toStrictEqual(new TextDecoder().decode(value2));
 	});
 
 	it('fuzzing test for toHttpHeader', () => {

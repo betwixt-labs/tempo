@@ -1,3 +1,4 @@
+import { Base64 } from './base64';
 import { TempoUtil } from './utils';
 
 /**
@@ -55,7 +56,6 @@ export class Metadata {
 	 */
 	private static isValidMetadataTextValue(textValue: string): boolean {
 		// Must be a valid Tempo "ASCII-Value" as defined here:
-		//   TODO
 		// This means printable ASCII (including/plus spaces); 0x20 to 0x7E inclusive.
 		const bytes = TempoUtil.textEncoder.encode(textValue); // Tempo validates strings on the byte level, not Unicode.
 		for (const ch of bytes) {
@@ -80,12 +80,8 @@ export class Metadata {
 	 * @param value The input string.
 	 * @returns The base64-encoded string.
 	 */
-	private static base64Encode(value: string | ArrayBuffer): string {
-		if (typeof value === 'string') {
-			value = TempoUtil.textEncoder.encode(value);
-		}
-		const binaryString = String.fromCharCode(...new Uint8Array(value));
-		return btoa(binaryString);
+	private static base64Encode(value: Uint8Array): string {
+		return Base64.encode(value);
 	}
 
 	/**
@@ -93,15 +89,8 @@ export class Metadata {
 	 * @param value The base64-encoded input string.
 	 * @returns The decoded string.
 	 */
-	private static base64Decode(value: string): ArrayBuffer {
-		const binaryString = atob(value);
-		const byteArray = new Uint8Array(binaryString.length);
-
-		for (let i = 0; i < binaryString.length; i++) {
-			byteArray[i] = binaryString.charCodeAt(i);
-		}
-
-		return byteArray.buffer;
+	private static base64Decode(value: string): Uint8Array {
+		return Base64.decode(value);
 	}
 
 	/**
@@ -110,30 +99,22 @@ export class Metadata {
 	 * @param key The metadata key. It will be converted to lowercase.
 	 * @param value The metadata value, can be a string or ArrayBuffer.
 	 */
-	set(key: string, value: string | ArrayBuffer): void {
-		if (this.isFrozen) {
-			throw new Error('Attempted to set metadata on a frozen collection.');
-		}
-		if (!Metadata.isValidKey(key)) {
-			throw new Error(`Invalid metadata key: '${key}'`);
-		}
+	set(key: string, value: string | Uint8Array): void {
+		if (this.isFrozen) throw new Error('Attempted to set metadata on a frozen collection.');
+		if (!Metadata.isValidKey(key)) throw new Error(`Invalid metadata key: '${key}'`);
 		key = key.toLowerCase();
 
+		const isBinaryValue = value instanceof Uint8Array;
 		const isBinaryKey = Metadata.isBinaryKey(key);
-		if (!isBinaryKey && value instanceof ArrayBuffer) {
-			throw new Error('Attempted to set binary value without a valid binary key');
-		}
-		if (isBinaryKey) {
-			value = Metadata.base64Encode(value);
-		} else if (typeof value !== 'string') {
-			value = TempoUtil.textDecoder.decode(value);
-		}
+		if (!isBinaryKey && isBinaryValue) throw new Error('Attempted to set binary value without a valid binary key');
+		if (isBinaryKey && !isBinaryValue) throw new Error('Attempted to set text value with a binary key');
 
-		if (!Metadata.isValidMetadataTextValue(value)) {
+		if (isBinaryKey && isBinaryValue) value = Metadata.base64Encode(value as Uint8Array);
+
+		if (!Metadata.isValidMetadataTextValue(value as string)) {
 			throw new Error('invalid metadata value: not ASCII');
 		}
-
-		this.data.set(key, [value]);
+		this.data.set(key, [value as string]);
 	}
 
 	/**
@@ -142,32 +123,26 @@ export class Metadata {
 	 * @param key The metadata key. It will be converted to lowercase.
 	 * @param value The metadata value, can be a string or ArrayBuffer.
 	 */
-	append(key: string, value: string | ArrayBuffer): void {
-		if (this.isFrozen) {
-			throw new Error('Attempted to append metadata on a frozen collection.');
-		}
-		if (!Metadata.isValidKey(key)) {
-			throw new Error(`Invalid metadata key: '${key}'`);
-		}
+	append(key: string, value: string | Uint8Array): void {
+		if (this.isFrozen) throw new Error('Attempted to append metadata on a frozen collection.');
+		if (!Metadata.isValidKey(key)) throw new Error(`Invalid metadata key: '${key}'`);
 
 		key = key.toLowerCase();
+		const isBinaryValue = value instanceof Uint8Array;
 		const isBinaryKey = Metadata.isBinaryKey(key);
-		if (!isBinaryKey && value instanceof ArrayBuffer) {
-			throw new Error('Attempted to set binary value without a valid binary key');
-		}
 
-		if (isBinaryKey) {
-			value = Metadata.base64Encode(value);
-		} else if (typeof value !== 'string') {
-			value = TempoUtil.textDecoder.decode(value);
-		}
+		if (!isBinaryKey && isBinaryValue) throw new Error('Attempted to set binary value without a valid binary key');
+		if (isBinaryKey && !isBinaryValue) throw new Error('Attempted to set text value with a binary key');
 
-		if (!Metadata.isValidMetadataTextValue(value)) {
+		if (isBinaryKey && isBinaryValue) value = Metadata.base64Encode(value as Uint8Array);
+
+		if (!Metadata.isValidMetadataTextValue(value as string)) {
 			throw new Error('invalid metadata value: not ASCII');
 		}
 
 		const existingValues = this.data.get(key) || [];
-		existingValues.push(value);
+
+		existingValues.push(value as string);
 		this.data.set(key, existingValues);
 	}
 
@@ -175,20 +150,40 @@ export class Metadata {
 	 * Retrieves the values for a metadata entry with the given key.
 	 * @param key The metadata key. It will be converted to lowercase.
 	 * @returns An array of metadata values or undefined if the key does not exist.
+	 * @deprecated Use getBinaryValues or getTextValues instead.
 	 */
-	get(key: string): string[] | undefined {
+	get(key: string): string[] | Uint8Array[] | undefined {
 		key = key.toLowerCase();
-
 		const values = this.data.get(key);
 		if (!values) {
 			return undefined;
 		}
-
 		if (Metadata.isBinaryKey(key)) {
-			return values.map((value) => TempoUtil.textDecoder.decode(Metadata.base64Decode(value)));
+			return values.map((value) => Metadata.base64Decode(value));
 		} else {
 			return values;
 		}
+	}
+
+	/**
+	 * Retrieves the binary values for a metadata entry with the given key.
+	 * @param key The metadata key. Case-insensitive.
+	 * @returns An array of binary metadata values or undefined if the key does not exist.
+	 */
+	getBinaryValues(key: string): Uint8Array[] | undefined {
+		if (!Metadata.isBinaryKey(key)) throw new Error('Attempted to get binary values with a text key');
+		key = key.toLowerCase();
+		return this.data.get(key)?.map((value) => Metadata.base64Decode(value));
+	}
+	/**
+	 * Retrieves the text values for a metadata entry with the given key.
+	 * @param key The metadata key. Case-insensitive.
+	 * @returns An array of text metadata values or undefined if the key does not exist.
+	 */
+	getTextValues(key: string): string[] | undefined {
+		if (Metadata.isBinaryKey(key)) throw new Error('Attempted to get text values with a binary key');
+		key = key.toLowerCase();
+		return this.data.get(key);
 	}
 
 	/**
@@ -254,21 +249,12 @@ export class Metadata {
 	 * @param otherMetadata The other Metadata instance to merge.
 	 */
 	concat(otherMetadata: Metadata): void {
-		if (this.isFrozen) {
-			throw new Error('Attempted to concat metadata into a frozen collection.');
-		}
-
+		if (this.isFrozen) throw new Error('Attempted to concat metadata into a frozen collection.');
 		for (const key of otherMetadata.keys()) {
 			const otherValues = otherMetadata.get(key);
 			if (otherValues) {
-				if (this.data.has(key)) {
-					for (const value of otherValues) {
-						this.append(key, value);
-					}
-				} else {
-					for (const value of otherValues) {
-						this.set(key, value);
-					}
+				for (const value of otherValues) {
+					this.append(key, value);
 				}
 			}
 		}
