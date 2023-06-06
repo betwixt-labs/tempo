@@ -71,7 +71,7 @@ const decode = (input: string): Uint8Array => {
 	// Byte index counter for the output array.
 	let byteIndex = 0;
 
-	// Iterate over the base64 characters in the input, four at a time. 
+	// Iterate over the base64 characters in the input, four at a time.
 	for (; i < baseLength; i += 4) {
 		// Decode four base64 characters into a 24-bit number. The `lookup` array maps ASCII character codes to their base64 values.
 		tmp =

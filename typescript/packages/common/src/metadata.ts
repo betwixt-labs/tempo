@@ -126,7 +126,7 @@ export class Metadata {
 	append(key: string, value: string | Uint8Array): void {
 		if (this.isFrozen) throw new Error('Attempted to append metadata on a frozen collection.');
 		if (!Metadata.isValidKey(key)) throw new Error(`Invalid metadata key: '${key}'`);
-		
+
 		key = key.toLowerCase();
 		const isBinaryValue = value instanceof Uint8Array;
 		const isBinaryKey = Metadata.isBinaryKey(key);
@@ -141,7 +141,7 @@ export class Metadata {
 		}
 
 		const existingValues = this.data.get(key) || [];
-		
+
 		existingValues.push(value as string);
 		this.data.set(key, existingValues);
 	}
