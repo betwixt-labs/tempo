@@ -17,6 +17,7 @@ import {
 import { MethodType } from './flags';
 
 import { HookRegistry } from './hook';
+import { Base64 } from './base64';
 
 export {
 	TempoStatusCode,
@@ -38,4 +39,5 @@ export {
 	tempoStream,
 	MethodType,
 	HookRegistry,
+	Base64,
 };
