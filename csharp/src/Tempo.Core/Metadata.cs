@@ -1,30 +1,52 @@
 using System.Buffers;
 using System.Buffers.Text;
-using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Text.Unicode;
 
 namespace Tempo.Core;
 
+/// <summary>
+/// The Metadata class supports setting, appending, and getting metadata entries, as well as
+/// converting the metadata into an HTTP header string and creating a Metadata
+/// instance from an HTTP header string. This class also handles both string
+/// and binary data, encoding and decoding binary data as needed.
+/// </summary>
 public partial class Metadata
 {
+    // The internal data structure used to store metadata key-value pairs.
     private readonly Dictionary<string, string[]> _metadata;
+    // Indicates if the metadata is frozen. Once frozen, no more changes can be made.
     private bool _isFrozen;
 
+    /// <summary>
+    /// Creates a new Metadata instance.
+    /// </summary>
     public Metadata()
     {
         _metadata = new Dictionary<string, string[]>();
         _isFrozen = false;
     }
+    /// <summary>
+    /// The total count of keys in the Metadata instance.
+    /// </summary>
     public int Size => _metadata.Count;
 
 
+    /// <summary>
+    /// Freezes the Metadata instance. Once frozen, no more changes can be made.
+    /// </summary>
     public void Freeze()
     {
         _isFrozen = true;
     }
 
+    /// <summary>
+    /// Sets the metadata from a string.
+    /// </summary>
+    /// <param name="key">The key the value will be stored under</param>
+    /// <param name="value">The value to store</param>
+    /// <exception cref="InvalidOperationException">If the metadata is frozen.</exception>
+    /// <exception cref="ArgumentException">If the key is not a valid metadata key.</exception>
     public void Set(string key, string value)
     {
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
@@ -33,6 +55,14 @@ public partial class Metadata
         InnerSet(key, value);
     }
 
+    /// <summary>
+    /// Sets the metadata from a byte array.
+    /// </summary>
+    /// <param name="key">The key the value will be stored under</param>
+    /// <param name="value">The value to store</param>
+    /// <exception cref="ArgumentException">If the key is not a binary key.</exception>
+    /// <exception cref="InvalidOperationException">If the metadata is frozen.</exception>
+    /// <exception cref="ArgumentException">If the key is not a valid metadata key.</exception>
     public void Set(string key, byte[] value)
     {
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
@@ -57,6 +87,13 @@ public partial class Metadata
         _metadata[key] = new string[] { value };
     }
 
+    /// <summary>
+    /// Appends a value to a metadata entry with the given key.
+    /// </summary>
+    /// <param name="key">The key to append to.</param>
+    /// <param name="value">The value to append.</param>
+    /// <exception cref="InvalidOperationException">If the metadata is frozen.</exception>
+    /// <exception cref="ArgumentException">If the key is not a valid metadata key.</exception>
     public void Append(string key, string value)
     {
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
@@ -65,13 +102,21 @@ public partial class Metadata
         InnerAppend(key, value);
     }
 
+    /// <summary>
+    /// Appends a binary value to a metadata entry with the given key.
+    /// </summary>
+    /// <param name="key">The key to append to.</param>
+    /// <param name="value">The value to append.</param>
+    /// <exception cref="ArgumentException">If the key is not a binary key.</exception>
+    /// <exception cref="InvalidOperationException">If the metadata is frozen.</exception>
+    /// <exception cref="ArgumentException">If the key is not a valid metadata key.</exception>
     public void Append(string key, byte[] value)
     {
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
         if (!IsValidKey(key)) throw new ArgumentException("Invalid metadata key");
         if (!IsBinaryKey(key)) throw new ArgumentException("Key is not a binary key");
         key = key.ToLowerInvariant();
-        InnerAppend(key,  Base64Url.Encode(value));
+        InnerAppend(key, TempoUtils.Base64Encode(value));
     }
 
     private void InnerAppend(string key, string value)
@@ -89,14 +134,41 @@ public partial class Metadata
             _metadata[key] = newValues;
         }
     }
-
-    public string[]? Get(string key)
+    /// <summary>
+    /// Retrieves the binary values for a metadata entry with the given key.
+    /// </summary>
+    /// <param name="key">The key to retrieve.</param>
+    /// <returns>The binary values for the given key, or null if the key does not exist.</returns>
+    public byte[][]? GetBinaryValues(string key)
     {
         key = key.ToLowerInvariant();
+        if (!IsBinaryKey(key)) throw new ArgumentException("Key is not a binary key");
         if (!_metadata.TryGetValue(key, out string[]? values)) return null;
-        return values;
+        byte[][] result = new byte[values.Length][];
+        for (int i = 0; i < values.Length; i++)
+        {
+            result[i] = TempoUtils.Base64Decode(values[i]);
+        }
+        return result;
     }
 
+    /// <summary>
+    /// Retrieves the text values for a metadata entry with the given key.
+    /// </summary>
+    /// <param name="key">The key to retrieve.</param> 
+    /// <returns>The text values for the given key, or null if the key does not exist.</returns>
+    public string[]? GetTextValues(string key)
+    {
+        key = key.ToLowerInvariant();
+        if (IsBinaryKey(key)) throw new ArgumentException("Key is a binary key");
+        _metadata.TryGetValue(key, out string[]? values);
+        return values;
+    }
+    /// <summary>
+    /// Removes a metadata entry with the given key.
+    /// </summary>
+    /// <param name="key">The key to remove.</param>
+    /// <exception cref="InvalidOperationException">If the metadata is frozen.</exception>
     public void Remove(string key)
     {
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
@@ -120,7 +192,10 @@ public partial class Metadata
         if (_isFrozen) throw new InvalidOperationException("Metadata is frozen");
         foreach (var key in otherMetadata.Keys)
         {
-            var otherValue = otherMetadata.Get(key);
+            var otherValue = IsBinaryKey(key) ?
+            otherMetadata.GetBinaryValues(key)?.Select((b) => TempoUtils.Base64Encode(b)).ToArray()
+            : otherMetadata.GetTextValues(key);
+
             if (otherValue is not null)
             {
                 if (_metadata.ContainsKey(key))
@@ -137,6 +212,24 @@ public partial class Metadata
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Converts the metadata to a single HTTP header string.
+    /// The resulting header string can be appended to an HTTP response
+    /// as 'custom-metadata: {metadata}'
+    /// </summary>
+    /// <returns>The metadata as a single HTTP header string.</returns>
+    public string ToHttpHeader()
+    {
+        var headers = new List<string>();
+        foreach (var entry in _metadata)
+        {
+            var escapedKey = Escape(entry.Key);
+            var escapedValues = entry.Value.Select(Escape);
+            headers.Add($"{escapedKey}:{string.Join(",", escapedValues)}");
+        }
+        return string.Join("|", headers);
     }
 
 
@@ -236,6 +329,11 @@ public partial class Metadata
         return result;
     }
 
+    /// <summary>
+    /// Creates a new Metadata instance from a Tempo HTTP header.
+    /// </summary>
+    /// <param name="header">The Tempo HTTP header.</param>
+    /// <returns>A new Metadata instance.</returns>
     public static Metadata FromHttpHeader(string header)
     {
         var metadata = new Metadata();
@@ -252,7 +350,7 @@ public partial class Metadata
                 var unescapedValue = Unescape(value);
                 if (IsBinaryKey(unescapedKey))
                 {
-                    metadata.Append(unescapedKey, Base64Url.Decode(unescapedValue));
+                    metadata.Append(unescapedKey, TempoUtils.Base64Decode(unescapedValue));
                 }
                 else
                 {

@@ -223,7 +223,7 @@ export class Metadata {
 	/**
 	 * Converts the metadata to a single HTTP header string.
 	 * The resulting header string can be appended to an HTTP response
-	 * as 'Metadata: {metadata}'.
+	 * as 'custom-metadata: {metadata}'.
 	 * @returns The HTTP header string.
 	 */
 	toHttpHeader(): string {
