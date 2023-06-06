@@ -24,7 +24,7 @@ import { ServiceRegistry, BaseService, ServerContext, BebopMethodAny, BebopMetho
  */
 export interface IHelloRequest extends BebopRecord {
   /**
-   * The name to be used in the greeting, of type string.
+   * The lol to be used in the greeting, of type string.
    */
   name: string;
 }

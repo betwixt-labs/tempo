@@ -1,6 +1,5 @@
 {
     "recommendations": [
-        "csharpier.csharpier-vscode",
         "rainway.vscode-bebop",
         "esbenp.prettier-vscode",
         "ms-dotnettools.csharp",

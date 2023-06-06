@@ -194,31 +194,31 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@tempojs/client@^0.0.1-alpha.24":
-  version "0.0.1-alpha.24"
-  resolved "https://registry.yarnpkg.com/@tempojs/client/-/client-0.0.1-alpha.24.tgz#654dd0ff2572cca0a75d44c987dd1211e9ce9c07"
-  integrity sha512-A9ECAteFbi8Qg2GgA8tgopxDnwIQU/1cCsiqvvftMUgP93Wy772MGIQSc3/2TzsetFcIqr+LzsCu8sKoGQ38bg==
+"@tempojs/client@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@tempojs/client/-/client-0.0.4.tgz#b091daaa4d943e8c80f47a222ac49d7bc5567dbf"
+  integrity sha512-/RZ4CnyAHVRHn+jf0w0xmKiODAXwhziEHz2hGDjgltXWtmhsOefTyT/GJ/4LVLVBxlsp6JODNRf8McVTBS4dNw==
   dependencies:
-    "@tempojs/common" "^0.0.1-alpha.24"
+    "@tempojs/common" "^0.0.4"
 
-"@tempojs/common@^0.0.1-alpha.24":
-  version "0.0.1-alpha.24"
-  resolved "https://registry.yarnpkg.com/@tempojs/common/-/common-0.0.1-alpha.24.tgz#d6a7a6eb52f8e3439f52b464f7fd817260f1d884"
-  integrity sha512-L8yWXsqYnTmXZjXiZOYGsWeghRxazbQvaxCXQHel/cT9LesRRGLZaMoYWmIndPBzFd0y5auvn3h1eWQXL5AIBw==
+"@tempojs/common@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@tempojs/common/-/common-0.0.4.tgz#4a7570a56e9cc6f758a3b3449e5d0408b17b348e"
+  integrity sha512-B44U6WVgiOFJxnYzZUkotQEYYPUXp4KHrYS793VRksLCf0NxgiClcZ8TUcrDljgqWkqtD6rW4gOJEjIdZs5rOA==
 
-"@tempojs/node-http-router@^0.0.1-alpha.24":
-  version "0.0.1-alpha.24"
-  resolved "https://registry.yarnpkg.com/@tempojs/node-http-router/-/node-http-router-0.0.1-alpha.24.tgz#9dcc04f1d3159e8476bc2a5cb462208dd6814e9d"
-  integrity sha512-elEBeIPjzRAioyy+uv8D4kUVeco7vkJM0NfZxbE0mC4QSqjgYIROdqPU0k/mpBsx6jwo2R0/0yna2HRhGSkm3g==
+"@tempojs/node-http-router@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@tempojs/node-http-router/-/node-http-router-0.0.4.tgz#6750ddc78c0b2c2d718d871d019c00fe78ad808f"
+  integrity sha512-myP2DdQHvBXab/v2S/vsrXI6hW5nOHl3i0SUXNRp23KvyVz0zzazP/jrItJVrKpqa37uPxc+u8dVK/sChsYSVw==
   dependencies:
-    "@tempojs/server" "^0.0.1-alpha.24"
+    "@tempojs/server" "^0.0.4"
 
-"@tempojs/server@^0.0.1-alpha.24":
-  version "0.0.1-alpha.24"
-  resolved "https://registry.yarnpkg.com/@tempojs/server/-/server-0.0.1-alpha.24.tgz#8abff2804fc472c88da2778f5277599d8fbe1595"
-  integrity sha512-kFoIoq3wRSKZlHKPvIAVHgm/o2d9lIbhV6lhDKy3y+tN0n9X7YX3Iul4geilt+kMEA12YUYMu33ebjB/wBFvaA==
+"@tempojs/server@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@tempojs/server/-/server-0.0.4.tgz#259c63ddd66c832bd31bb014765379aa9881601a"
+  integrity sha512-lj+gGEtaIPH19u2qpGb6v7ZCpG59DGjrt/1nGrCgR0WHzqAffCNhihCWi7527Seb/sMz15CMTkNStJx/UylvOg==
   dependencies:
-    "@tempojs/common" "^0.0.1-alpha.24"
+    "@tempojs/common" "^0.0.4"
 
 "@types/node@^14.14.10":
   version "14.18.43"
@@ -267,10 +267,10 @@ bebop-tools@^2.7.0:
   dependencies:
     "@types/node" "^14.14.10"
 
-bebop@^2.7.0:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.7.0.tgz#96d86b3323fe15ac57eb47b1cd74785497357465"
-  integrity sha512-gyQUaKFuD1ScoZlrPLstGRmpA4cYJau9eUQI7xYCbvPdWz4m7jOG7nPvw32wjpuD3Qdrr7nAqVPcWVrL8jdbpQ==
+bebop@^2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.7.1.tgz#815d0bb5ad0fe3ba8db8a1c0bac081c59058ee0e"
+  integrity sha512-6mCEzfAHzH5Hml5AgfxWmk7sCLvuviDmUB5urpXMHNgFDo02yRivleOLjpVm8Lt7YBqsayWZDHM16udRmdzXJQ==
 
 binary-extensions@^2.0.0:
   version "2.2.0"

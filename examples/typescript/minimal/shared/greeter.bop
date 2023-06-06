@@ -3,7 +3,7 @@
  */
  struct HelloRequest {
     /** 
-     * The name to be used in the greeting, of type string.
+     * The lol to be used in the greeting, of type string.
      */
     string name;
 }

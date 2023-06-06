@@ -26,8 +26,8 @@
     "wait-port": "^1.0.4"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.1",
-    "@tempojs/node-http-router": "^0.0.1",
-    "bebop": "^2.7.0"
+    "@tempojs/client": "^0.0.4",
+    "@tempojs/node-http-router": "^0.0.4",
+    "bebop": "^2.7.1"
   }
 }
