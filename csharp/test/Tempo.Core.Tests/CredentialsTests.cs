@@ -1,9 +1,4 @@
 namespace Tempo.Core.Tests;
-
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using Tempo.Core;
-
 [TestClass]
 public class CredentialsTests
 {

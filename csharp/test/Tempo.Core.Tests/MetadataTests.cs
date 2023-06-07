@@ -1,5 +1,4 @@
 namespace Tempo.Core.Tests;
-using Tempo.Core;
 
 [TestClass]
 public class MetadataTests
