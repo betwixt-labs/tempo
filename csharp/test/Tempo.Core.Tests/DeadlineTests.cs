@@ -79,7 +79,7 @@ public class DeadlineTests
     {
         var deadline = Deadline.After(TimeSpan.FromSeconds(1));
         bool actionCalled = false;
-        deadline.RunOnExpiration(() => actionCalled = true);
+        using var cancel = deadline.RunOnExpiration(() => actionCalled = true);
         await Task.Delay(2000);  // Wait for more than 1 second
         Assert.IsTrue(actionCalled);
     }
