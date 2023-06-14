@@ -91,7 +91,7 @@ export class Deadline {
 				return String(Math.ceil(amount)) + unit;
 			}
 		}
-		throw new Error('Deadline is too far in the future');
+		throw new TempoError(TempoStatusCode.INTERNAL, 'Deadline is too far in the future');
 	}
 
 	/**
@@ -127,7 +127,7 @@ export class Deadline {
 	 */
 	public static fromISOString(isoString: string): Deadline {
 		if (!isoString.endsWith('Z')) {
-			throw new Error('Provided ISO string is not in UTC format');
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Provided ISO string is not in UTC format');
 		}
 		const deadlineDate = new Date(isoString);
 		return new Deadline(deadlineDate);
@@ -181,7 +181,7 @@ export class Deadline {
 	public static after(duration: number, unit: 'milliseconds' | 'seconds' | 'minutes' | 'hours'): Deadline {
 		const factor = timeUnitFactors[unit];
 		if (factor === undefined) {
-			throw new Error(`Invalid time unit: ${unit}`);
+			throw new TempoError(TempoStatusCode.INTERNAL, `Invalid time unit: ${unit}`);
 		}
 		const durationMs = duration * factor;
 		const expirationTime = new Date().getTime() + durationMs;

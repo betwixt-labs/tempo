@@ -76,7 +76,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 			};
 			if (this.allowedCorsOrigins !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
-					throw new Error('Origin not allowed');
+					throw new TempoError(TempoStatusCode.PERMISSION_DENIED, 'Origin not allowed');
 				}
 				headers['Access-Control-Allow-Origin'] = origin;
 				headers['Vary'] = 'Origin';
@@ -102,7 +102,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		if (this.corsEnabled) {
 			if (this.allowedCorsOrigins !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
-					throw new TempoError(TempoStatusCode.FAILED_PRECONDITION, 'origin not allowed');
+					throw new TempoError(TempoStatusCode.PERMISSION_DENIED, 'origin not allowed');
 				}
 				headers.set('Access-Control-Allow-Origin', origin);
 				headers.append('Vary', 'Origin');
@@ -422,6 +422,6 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	}
 
 	override process(_request: Request<unknown, CfProperties<unknown>>, _response: Response, _env: TEnv): Promise<void> {
-		throw new Error('Method not implemented.');
+		throw new TempoError(TempoStatusCode.INTERNAL, 'Method not implemented.');
 	}
 }

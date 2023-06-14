@@ -109,7 +109,7 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 		streamIdentifier: streamId,
 	};
 	if (recordGenerator === undefined) {
-		throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'record generator is undefined');
+		throw new TempoError(TempoStatusCode.INTERNAL, 'record generator is undefined');
 	}
 	const writeFrame = async (payload: Uint8Array) => {
 		if (writeIndex + tempoStream.FRAME_HEADER_LENGTH + payload.length > buffer.length) {
