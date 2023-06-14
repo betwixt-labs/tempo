@@ -102,14 +102,17 @@ export class Metadata {
 	 * @param value The metadata value, can be a string or ArrayBuffer.
 	 */
 	set(key: string, value: string | Uint8Array): void {
-		if (this.isFrozen) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set metadata on a frozen collection.');
-		if (!Metadata.isValidKey(key)) throw new TempoError(TempoStatusCode.INTERNAL,`Invalid metadata key: '${key}'`);
+		if (this.isFrozen)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set metadata on a frozen collection.');
+		if (!Metadata.isValidKey(key)) throw new TempoError(TempoStatusCode.INTERNAL, `Invalid metadata key: '${key}'`);
 		key = key.toLowerCase();
 
 		const isBinaryValue = value instanceof Uint8Array;
 		const isBinaryKey = Metadata.isBinaryKey(key);
-		if (!isBinaryKey && isBinaryValue) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set binary value without a valid binary key');
-		if (isBinaryKey && !isBinaryValue) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set text value with a binary key');
+		if (!isBinaryKey && isBinaryValue)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set binary value without a valid binary key');
+		if (isBinaryKey && !isBinaryValue)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set text value with a binary key');
 
 		if (isBinaryKey && isBinaryValue) value = Metadata.base64Encode(value as Uint8Array);
 
@@ -126,15 +129,18 @@ export class Metadata {
 	 * @param value The metadata value, can be a string or ArrayBuffer.
 	 */
 	append(key: string, value: string | Uint8Array): void {
-		if (this.isFrozen) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to append metadata on a frozen collection.');
+		if (this.isFrozen)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to append metadata on a frozen collection.');
 		if (!Metadata.isValidKey(key)) throw new TempoError(TempoStatusCode.INTERNAL, `Invalid metadata key: '${key}'`);
 
 		key = key.toLowerCase();
 		const isBinaryValue = value instanceof Uint8Array;
 		const isBinaryKey = Metadata.isBinaryKey(key);
 
-		if (!isBinaryKey && isBinaryValue) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set binary value without a valid binary key');
-		if (isBinaryKey && !isBinaryValue) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set text value with a binary key');
+		if (!isBinaryKey && isBinaryValue)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set binary value without a valid binary key');
+		if (isBinaryKey && !isBinaryValue)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to set text value with a binary key');
 
 		if (isBinaryKey && isBinaryValue) value = Metadata.base64Encode(value as Uint8Array);
 
@@ -173,7 +179,8 @@ export class Metadata {
 	 * @returns An array of binary metadata values or undefined if the key does not exist.
 	 */
 	getBinaryValues(key: string): Uint8Array[] | undefined {
-		if (!Metadata.isBinaryKey(key)) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to get binary values with a text key');
+		if (!Metadata.isBinaryKey(key))
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to get binary values with a text key');
 		key = key.toLowerCase();
 		return this.data.get(key)?.map((value) => Metadata.base64Decode(value));
 	}
@@ -183,7 +190,8 @@ export class Metadata {
 	 * @returns An array of text metadata values or undefined if the key does not exist.
 	 */
 	getTextValues(key: string): string[] | undefined {
-		if (Metadata.isBinaryKey(key)) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to get text values with a binary key');
+		if (Metadata.isBinaryKey(key))
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to get text values with a binary key');
 		key = key.toLowerCase();
 		return this.data.get(key);
 	}
@@ -251,7 +259,8 @@ export class Metadata {
 	 * @param otherMetadata The other Metadata instance to merge.
 	 */
 	concat(otherMetadata: Metadata): void {
-		if (this.isFrozen) throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to concat metadata into a frozen collection.');
+		if (this.isFrozen)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'Attempted to concat metadata into a frozen collection.');
 		for (const key of otherMetadata.keys()) {
 			const otherValues = otherMetadata.get(key);
 			if (otherValues) {

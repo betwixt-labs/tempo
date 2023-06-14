@@ -422,6 +422,6 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 	}
 
 	override process(_request: Request<unknown, CfProperties<unknown>>, _response: Response, _env: TEnv): Promise<void> {
-		throw new TempoError(TempoStatusCode.INTERNAL,'Method not implemented.');
+		throw new TempoError(TempoStatusCode.INTERNAL, 'Method not implemented.');
 	}
 }

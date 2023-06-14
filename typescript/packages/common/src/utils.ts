@@ -1,5 +1,5 @@
-import { TempoError } from "./error";
-import { TempoStatusCode } from "./status";
+import { TempoError } from './error';
+import { TempoStatusCode } from './status';
 
 /**
  * Parses a string into an int. Throws an error if the string is not a valid int.

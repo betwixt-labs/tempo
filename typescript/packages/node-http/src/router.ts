@@ -87,7 +87,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			response.setHeader('Access-Control-Allow-Credentials', 'true');
 			if (this.allowedCorsOrigins !== undefined && origin !== undefined) {
 				if (!this.allowedCorsOrigins.includes(origin)) {
-					throw new TempoError(TempoStatusCode.PERMISSION_DENIED,'Origin not allowed');
+					throw new TempoError(TempoStatusCode.PERMISSION_DENIED, 'Origin not allowed');
 				}
 				response.setHeader('Access-Control-Allow-Origin', origin);
 				response.setHeader('Vary', 'Origin');
