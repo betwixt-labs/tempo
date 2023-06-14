@@ -1,4 +1,4 @@
-import { TempoError } from '../dist';
+import { TempoError } from './error';
 import { Base64 } from './base64';
 import { TempoStatusCode } from './status';
 import { TempoUtil } from './utils';
