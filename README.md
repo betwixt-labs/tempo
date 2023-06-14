@@ -77,7 +77,7 @@ Tempo allows you to easily build & consume low-latency, cross-platform, and full
 We welcome and appreciate any questions, comments, or suggestions you may have! We encourage you to participate in our growing community, and there are several ways you can get in touch with us:
 
 - 💬&nbsp; Start a conversation on our [GitHub Discussions](https://github.com/betwixt-labs/tempo/discussions) board.
-- 🎮&nbsp; Join our [Discord server](https://discord.gg/Pn8BwUnP25) to chat with fellow developers and maintainers.
+- 🎮&nbsp; Join our [Discord server](https://discord.gg/jVfz9sMPWv) to chat with fellow developers and maintainers.
 - 🐞&nbsp; If you encounter any issues or have a feature request, please [open an issue](https://github.com/betwixt-labs/tempo/issues) on GitHub.
 
 We look forward to hearing from you and working together to make Tempo even better! 🚀
