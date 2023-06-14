@@ -1,3 +1,6 @@
+import { TempoError } from "./error";
+import { TempoStatusCode } from "./status";
+
 /**
  * Parses a string into an int. Throws an error if the string is not a valid int.
  * @param value - the string to parse
@@ -6,7 +9,7 @@
 const tryParseInt = (value: string): number => {
 	const num = parseFloat(value);
 	if (isNaN(num) || !isFinite(num) || num % 1 !== 0) {
-		throw new Error(`Invalid int: ${value}`);
+		throw new TempoError(TempoStatusCode.INTERNAL, `Invalid int: ${value}`);
 	}
 	return num;
 };
