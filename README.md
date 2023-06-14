@@ -11,7 +11,7 @@
   <a href="https://github.com/betwixt-labs/tempo/blob/main/LICENSE">
     <img alt="Apache License" src="https://img.shields.io/github/license/betwixt-labs/tempo" />
   </a>
-  <a href="https://discord.gg/Pn8BwUnP25">
+  <a href="https://discord.gg/jVfz9sMPWv">
     <img alt="Discord" src="https://img.shields.io/discord/1102669305537110036?color=7389D8&label&logo=discord&logoColor=ffffff" />
   </a>
   <br />
