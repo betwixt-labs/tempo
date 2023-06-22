@@ -61,14 +61,16 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 				if (header.flags & tempoStream.getFlag('END_STREAM')) {
 					return;
 				}
-
-				if (payloadSize !== 0) {
-					if (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
-						break;
-					}
-					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
-					readIndex += payloadSize + CRLF_LENGTH;
+				// if the payload size is 0 and the end of the stream has not been reached, then we need
+				// to throw an error because this indicates a data loss or a badly formed stream
+				if (payloadSize === 0) {
+					throw new TempoError(TempoStatusCode.DATA_LOSS, 'payload size must be greater than zero');
 				}
+				if (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
+					break;
+				}
+				yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
+				readIndex += payloadSize + CRLF_LENGTH;
 			}
 
 			if (writeIndex - readIndex !== 0) {
