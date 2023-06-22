@@ -29,6 +29,6 @@
     "@tempojs/client": "^0.0.5",
     "@tempojs/common": "^0.0.5",
     "@tempojs/server": "^0.0.5",
-    "bebop": "^2.8.1"
+    "bebop": "^2.8.2"
   }
 }
