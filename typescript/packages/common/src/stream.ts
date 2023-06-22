@@ -178,39 +178,36 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 				const header = readFrameHeaderFromBuffer(buffer, readIndex);
 				readIndex += FRAME_HEADER_LENGTH;
 				payloadSize = header.length;
-
 				if (header.flags & getFlag('END_STREAM')) {
 					stopRequested = true;
 					break;
 				}
-				// Only wait for the next frame if the current payload size is zero
+				// if the payload size is 0 and the end of the stream has not been reached, then we need
+				// to throw an error because this indicates a data loss or a badly formed stream
 				if (payloadSize === 0) {
-					if (writeIndex - readIndex < FRAME_HEADER_LENGTH) {
-						break;
-					}
-				} else {
-					while (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
-						const { done, value } = await (deadline
-							? deadline.executeWithinDeadline(async () => await reader.read(), abortController)
-							: await reader.read());
-
-						if (done) {
-							stopRequested = true;
-						}
-
-						if (value !== undefined) {
-							if (writeIndex + value.length > buffer.length) {
-								const newBuffer = new Uint8Array(buffer.length + value.length);
-								newBuffer.set(buffer);
-								buffer = newBuffer;
-							}
-							buffer.set(value, writeIndex);
-							writeIndex += value.length;
-						}
-					}
-					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
-					readIndex += payloadSize + CRLF_LENGTH;
+					throw new TempoError(TempoStatusCode.DATA_LOSS, 'payload size must be greater than zero');
 				}
+				while (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
+					const { done, value } = await (deadline
+						? deadline.executeWithinDeadline(async () => await reader.read(), abortController)
+						: await reader.read());
+
+					if (done) {
+						stopRequested = true;
+					}
+
+					if (value !== undefined) {
+						if (writeIndex + value.length > buffer.length) {
+							const newBuffer = new Uint8Array(buffer.length + value.length);
+							newBuffer.set(buffer);
+							buffer = newBuffer;
+						}
+						buffer.set(value, writeIndex);
+						writeIndex += value.length;
+					}
+				}
+				yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
+				readIndex += payloadSize + CRLF_LENGTH;
 			}
 
 			if (done && writeIndex - readIndex !== 0) {
