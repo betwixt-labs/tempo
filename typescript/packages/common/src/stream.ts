@@ -5,6 +5,7 @@ import { Deadline } from './deadline';
 
 // various methods & types shared across stream implementations
 export const FRAME_HEADER_LENGTH = 9;
+const CRLF_LENGTH = 2;
 /**
  * Tempo stream frame header.
  *
@@ -188,7 +189,7 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 						break;
 					}
 				} else {
-					while (writeIndex - readIndex < payloadSize) {
+					while (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
 						const { done, value } = await (deadline
 							? deadline.executeWithinDeadline(async () => await reader.read(), abortController)
 							: await reader.read());
@@ -208,7 +209,7 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 						}
 					}
 					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
-					readIndex += payloadSize;
+					readIndex += payloadSize + CRLF_LENGTH;
 				}
 			}
 
@@ -254,8 +255,9 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 			streamIdentifier: streamId,
 		};
 		const writeFrame = async (payload: Uint8Array) => {
-			if (writeIndex + FRAME_HEADER_LENGTH + payload.length > buffer.length) {
-				const newBuffer = new Uint8Array(writeIndex + FRAME_HEADER_LENGTH + payload.length);
+			const requiredLength = writeIndex + FRAME_HEADER_LENGTH + payload.length + CRLF_LENGTH;
+			if (requiredLength > buffer.length) {
+				const newBuffer = new Uint8Array(requiredLength);
 				newBuffer.set(buffer);
 				buffer = newBuffer;
 			}
@@ -264,6 +266,8 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 			writeIndex += FRAME_HEADER_LENGTH;
 			buffer.set(payload, writeIndex);
 			writeIndex += payload.length;
+			buffer[writeIndex++] = 0x0d;
+			buffer[writeIndex++] = 0x0a;
 			await writer.write(buffer.slice(0, writeIndex));
 			writeIndex = 0; // reset writeIndex after sending
 		};
