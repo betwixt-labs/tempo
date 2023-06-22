@@ -2,6 +2,7 @@ import { Deadline, TempoError, TempoStatusCode, tempoStream } from '@tempojs/com
 import { BebopRecord } from 'bebop';
 import { Readable, Writable } from 'stream';
 
+const CRLF_LENGTH = 2;
 /**
  * Reads and decodes payloads from a Node.js Readable stream of Uint8Array.
  *
@@ -62,11 +63,11 @@ export async function* readTempoStream<TRecord extends BebopRecord>(
 				}
 
 				if (payloadSize !== 0) {
-					if (writeIndex - readIndex < payloadSize) {
+					if (writeIndex - readIndex < payloadSize + CRLF_LENGTH) {
 						break;
 					}
 					yield await decoder(buffer.subarray(readIndex, readIndex + payloadSize));
-					readIndex += payloadSize;
+					readIndex += payloadSize + CRLF_LENGTH;
 				}
 			}
 
@@ -112,8 +113,9 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 		throw new TempoError(TempoStatusCode.INTERNAL, 'record generator is undefined');
 	}
 	const writeFrame = async (payload: Uint8Array) => {
-		if (writeIndex + tempoStream.FRAME_HEADER_LENGTH + payload.length > buffer.length) {
-			const newBuffer = new Uint8Array(writeIndex + tempoStream.FRAME_HEADER_LENGTH + payload.length);
+		const requiredLength = writeIndex + tempoStream.FRAME_HEADER_LENGTH + payload.length + CRLF_LENGTH;
+		if (requiredLength > buffer.length) {
+			const newBuffer = new Uint8Array(requiredLength);
 			newBuffer.set(buffer);
 			buffer = newBuffer;
 		}
@@ -122,6 +124,8 @@ export async function writeTempoStream<TRecord extends BebopRecord>(
 		writeIndex += tempoStream.FRAME_HEADER_LENGTH;
 		buffer.set(payload, writeIndex);
 		writeIndex += payload.length;
+		buffer[writeIndex++] = 0x0d;
+		buffer[writeIndex++] = 0x0a;
 		stream.write(buffer.slice(0, writeIndex));
 		writeIndex = 0; // reset writeIndex after sending
 	};

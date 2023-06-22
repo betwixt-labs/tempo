@@ -110,7 +110,7 @@ describe('getFlag', () => {
 // Mock decoder function
 const mockDecoder = (buffer: Uint8Array): Promise<string> => {
 	// Convert buffer to string for testing purposes
-	return Promise.resolve(TempoUtil.textDecoder.decode(buffer));
+	return Promise.resolve(TempoUtil.utf8GetString(buffer));
 };
 
 // Helper function to create a ReadableStream with Uint8Array chunks
@@ -140,13 +140,13 @@ describe('readStream', () => {
 		const payload2 = new Uint8Array([0x57, 0x6f, 0x72, 0x6c, 0x64]); // "World"
 		const frame1Buffer = new Uint8Array(9);
 		writeFrameHeaderToBuffer(frame1Buffer, header, 0);
-		const frame1 = new Uint8Array(frame1Buffer.byteLength + payload1.byteLength);
+		const frame1 = new Uint8Array(frame1Buffer.byteLength + payload1.byteLength + 2);
 		frame1.set(new Uint8Array(frame1Buffer), 0);
 		frame1.set(payload1, frame1Buffer.byteLength);
 
 		const frame2Buffer = new Uint8Array(9);
 		writeFrameHeaderToBuffer(frame2Buffer, header, 0);
-		const frame2 = new Uint8Array(frame2Buffer.byteLength + payload2.byteLength);
+		const frame2 = new Uint8Array(frame2Buffer.byteLength + payload2.byteLength + 2);
 		frame2.set(new Uint8Array(frame2Buffer), 0);
 		frame2.set(payload2, frame2Buffer.byteLength);
 
@@ -182,6 +182,8 @@ describe('readStream', () => {
 			frame1Chunks.push(new Uint8Array([byte]));
 		}
 
+		frame1Chunks.push(new Uint8Array([0x0d, 0x0a])); // CRLF
+
 		// Generate chunks for header and payload 2
 		const frame2Chunks: Uint8Array[] = [];
 		const frame2HeaderBuffer = new Uint8Array(9);
@@ -192,6 +194,7 @@ describe('readStream', () => {
 		for (const byte of payload2) {
 			frame2Chunks.push(new Uint8Array([byte]));
 		}
+		frame2Chunks.push(new Uint8Array([0x0d, 0x0a])); // CRLF
 
 		const stream = createReadableStream([...frame1Chunks, ...frame2Chunks]);
 
@@ -237,10 +240,11 @@ describe('writeStream', () => {
 		// Validate data
 		for (let i = 0; i < writtenData.length; i++) {
 			const chunk = writtenData[i];
+
 			if (chunk === undefined) throw new Error('Chunk is undefined');
 			// Validate header
 			const header = readFrameHeaderFromBuffer(chunk, 0);
-			const payloadChunk = chunk.slice(9);
+			const payloadChunk = chunk.slice(9, chunk.length - 2);
 
 			expect(header.length).toBe(payloadChunk.length);
 

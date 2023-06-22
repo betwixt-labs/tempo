@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/server",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "tempo server",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -16,6 +16,6 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@tempojs/common": "^0.0.4"
+    "@tempojs/common": "^0.0.5"
   }
 }

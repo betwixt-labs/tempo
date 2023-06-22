@@ -21,6 +21,7 @@ import { MethodInfo } from './method';
 import { RetryPolicy } from './retry';
 import { TempoUtil } from '@tempojs/common';
 import { CallCredentials, InsecureChannelCredentials } from './auth';
+import { BebopContentType } from '@tempojs/common';
 
 /**
  * The BaseChannel class represents the foundation for implementing specific
@@ -28,11 +29,21 @@ import { CallCredentials, InsecureChannelCredentials } from './auth';
  */
 export abstract class BaseChannel {
 	protected hooks?: HookRegistry<ClientContext, unknown> | undefined;
+	protected readonly contentTypeValue: string;
 	/**
 	 * Constructs a BaseChannel instance.
 	 * @param {URL} target - The target URL of the server.
+	 * @param {TempoLogger} logger - The logger instance to use for logging.
+	 * @param {BebopContentType} contentType - The content type to use for requests and responses.
 	 */
-	protected constructor(protected readonly target: URL, protected readonly logger: TempoLogger) {}
+	protected constructor(
+		protected readonly target: URL,
+		protected readonly logger: TempoLogger,
+		protected readonly contentType: BebopContentType,
+	) {
+		const charSet = contentType === 'json' ? '; charset=utf-8' : '';
+		this.contentTypeValue = `application/tempo+${contentType}${charSet}`;
+	}
 
 	/**
 	 * A function to create an instance of a client class extending BaseClient.
@@ -130,6 +141,52 @@ export abstract class BaseChannel {
 	public useHooks<TEnvironment>(hooks: HookRegistry<ClientContext, TEnvironment>): void {
 		this.hooks = hooks;
 	}
+
+	/**
+	 * Serializes a request record to a Uint8Array based on the specified content type.
+	 *
+	 * @param request - The request record to be serialized.
+	 * @param method - The method information.
+	 * @returns A Uint8Array representing the serialized request record.
+	 * @throws {TempoError} if the specified content type is not supported.
+	 * @throws {BebopRuntimeError} if the request record cannot be serialized.
+	 */
+	protected serializeRequest<TRequest extends BebopRecord, TResponse extends BebopRecord>(
+		request: TRequest,
+		method: MethodInfo<TRequest, TResponse>,
+	): Uint8Array {
+		switch (this.contentType) {
+			case 'bebop':
+				return method.serialize(request);
+			case 'json':
+				return TempoUtil.utf8GetBytes(method.toJson(request));
+			default:
+				throw new TempoError(TempoStatusCode.INTERNAL, `invalid request content type: ${this.contentType}`);
+		}
+	}
+
+	/**
+	 * Deserializes a response record from a Uint8Array based on the specified content type.
+	 *
+	 * @param response - The response record to be deserialized.
+	 * @param method - The method information.
+	 * @returns The deserialized response record.
+	 * @throws {TempoError} if the specified content type is not supported.
+	 * @throws {BebopRuntimeError} When the response record cannot be serialized.
+	 */
+	protected deserializeResponse<TRequest extends BebopRecord, TResponse extends BebopRecord>(
+		response: Uint8Array,
+		method: MethodInfo<TRequest, TResponse>,
+	): TResponse {
+		switch (this.contentType) {
+			case 'bebop':
+				return method.deserialize(response);
+			case 'json':
+				return method.fromJson(TempoUtil.utf8GetString(response));
+			default:
+				throw new TempoError(TempoStatusCode.INTERNAL, `invalid response content type: ${this.contentType}`);
+		}
+	}
 }
 
 /**
@@ -181,12 +238,12 @@ export class TempoChannel extends BaseChannel {
 	public static readonly defaultMaxReceiveMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultMaxSendMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultCredentials: CallCredentials = InsecureChannelCredentials.create();
+	public static readonly defaultContentType: BebopContentType = 'bebop';
 
 	private readonly isSecure: boolean;
 	private readonly maxReceiveMessageSize: number;
 	private readonly credentials: CallCredentials;
 	private readonly userAgent: string;
-	private readonly contentTypeValue: string;
 
 	/**
 	 * Constructs a new TempoChannel instance.
@@ -196,9 +253,12 @@ export class TempoChannel extends BaseChannel {
 	 * @protected
 	 */
 	protected constructor(target: URL, options: TempoChannelOptions) {
-		super(target, (options.logger ??= new ConsoleLogger('TempoChannel')));
+		super(
+			target,
+			(options.logger ??= new ConsoleLogger('TempoChannel')),
+			(options.contentType ??= TempoChannel.defaultContentType),
+		);
 		this.logger.debug('creating new TempoChannel');
-		this.contentTypeValue = `application/tempo+bebop`;
 		this.isSecure = target.protocol === 'https:';
 		this.credentials = options.credentials ??= TempoChannel.defaultCredentials;
 		if (
@@ -398,7 +458,7 @@ export class TempoChannel extends BaseChannel {
 		}
 		// we can't modify the useragent in browsers, so use x-user-agent instead
 		if (ExecutionEnvironment.isBrowser || ExecutionEnvironment.isWebWorker) {
-			headers.set('X-User-Agent', this.userAgent);
+			headers.set('x-user-agent', this.userAgent);
 		} else {
 			headers.set('user-agent', this.userAgent);
 		}
@@ -451,15 +511,19 @@ export class TempoChannel extends BaseChannel {
 			throw new TempoError(statusCode, tempoMessage);
 		}
 
-		const responseContentType = response.headers.get('Content-type');
+		const responseContentType = response.headers.get('content-type');
 		if (responseContentType === null) {
-			throw new TempoError(TempoStatusCode.UNKNOWN, 'content-type missing on response');
+			throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'content-type missing on response');
 		}
-		if (responseContentType !== this.contentTypeValue) {
-			throw new TempoError(TempoStatusCode.UNKNOWN, 'response content-type does not match request');
+		const contentType = TempoUtil.parseContentType(responseContentType);
+		if (contentType.format !== this.contentType) {
+			throw new TempoError(
+				TempoStatusCode.INVALID_ARGUMENT,
+				`response content-type does not match request: ${contentType.format} !== ${this.contentType}`,
+			);
 		}
 		if (methodType === MethodType.Unary || methodType === MethodType.ClientStream) {
-			const contentLength = response.headers.get('Content-length');
+			const contentLength = response.headers.get('content-length');
 			if (contentLength === null) {
 				throw new TempoError(TempoStatusCode.OUT_OF_RANGE, 'response did not contain a valid content-length header');
 			}
@@ -496,7 +560,7 @@ export class TempoChannel extends BaseChannel {
 	): Promise<TResponse> {
 		try {
 			// Prepare request data based on content type
-			const requestData: Uint8Array = method.serialize(request);
+			const requestData: Uint8Array = this.serializeRequest(request, method);
 			if (this.hooks !== undefined) {
 				await this.hooks.executeRequestHooks(context);
 			}
@@ -534,7 +598,7 @@ export class TempoChannel extends BaseChannel {
 			}
 			// Deserialize the response based on the content type
 			const responseData = new Uint8Array(await response.arrayBuffer());
-			const record: TResponse = method.deserialize(responseData);
+			const record: TResponse = this.deserializeResponse(responseData, method);
 			if (this.hooks !== undefined) {
 				await this.hooks.executeDecodeHooks(context, record);
 			}
@@ -575,7 +639,7 @@ export class TempoChannel extends BaseChannel {
 			tempoStream.writeTempoStream(
 				transformStream.writable,
 				generator(),
-				(payload: TRequest) => method.serialize(payload),
+				(payload: TRequest) => this.serializeRequest(payload, method),
 				options?.deadline,
 				options?.controller,
 			);
@@ -596,7 +660,7 @@ export class TempoChannel extends BaseChannel {
 			await this.processResponseHeaders(response, context, method.type);
 			// Deserialize the response based on the content type
 			const responseData = new Uint8Array(await response.arrayBuffer());
-			const record: TResponse = method.deserialize(responseData);
+			const record: TResponse = this.deserializeResponse(responseData, method);
 			if (this.hooks !== undefined) {
 				await this.hooks.executeDecodeHooks(context, record);
 			}
@@ -630,7 +694,7 @@ export class TempoChannel extends BaseChannel {
 	): Promise<AsyncGenerator<TResponse, void, undefined>> {
 		try {
 			// Prepare request data based on content type
-			const requestData: Uint8Array = method.serialize(request);
+			const requestData: Uint8Array = this.serializeRequest(request, method);
 			if (this.hooks !== undefined) {
 				await this.hooks.executeRequestHooks(context);
 			}
@@ -678,7 +742,7 @@ export class TempoChannel extends BaseChannel {
 							`received message larger than ${this.maxReceiveMessageSize} bytes`,
 						);
 					}
-					const record = method.deserialize(buffer);
+					const record = this.deserializeResponse(buffer, method);
 					if (this.hooks !== undefined) {
 						await this.hooks.executeDecodeHooks(context, record);
 					}
@@ -721,7 +785,7 @@ export class TempoChannel extends BaseChannel {
 			tempoStream.writeTempoStream(
 				transformStream.writable,
 				generator(),
-				(payload: TRequest) => method.serialize(payload),
+				(payload: TRequest) => this.serializeRequest(payload, method),
 				options?.deadline,
 				options?.controller,
 			);
@@ -753,7 +817,7 @@ export class TempoChannel extends BaseChannel {
 							`received message larger than ${this.maxReceiveMessageSize} bytes`,
 						);
 					}
-					const record = method.deserialize(buffer);
+					const record = this.deserializeResponse(buffer, method);
 					if (this.hooks !== undefined) {
 						await this.hooks.executeDecodeHooks(context, record);
 					}
