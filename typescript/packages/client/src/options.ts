@@ -1,4 +1,4 @@
-import { TempoLogger, Deadline } from '@tempojs/common';
+import { TempoLogger, Deadline, BebopContentType } from '@tempojs/common';
 import { TempoChannel as TempoChannel } from './channel';
 import { RetryPolicy } from './retry';
 import { CallCredentials } from './auth';
@@ -40,9 +40,15 @@ export class TempoChannelOptions {
 	public unsafeUseInsecureChannelCallCredentials?: boolean;
 
 	/**
+	 * The content type to use for the channel. Defaults to the value in `TempoChannel.defaultContentType`.
+	 */
+	public contentType?: BebopContentType;
+
+	/**
 	 * Constructs a new instance of TempoChannelOptions with default values.
 	 */
 	constructor() {
+		this.contentType = TempoChannel.defaultContentType;
 		this.maxReceiveMessageSize = TempoChannel.defaultMaxReceiveMessageSize;
 		this.maxRetryAttempts = TempoChannel.defaultMaxRetryAttempts;
 		this.credentials = TempoChannel.defaultCredentials;

@@ -110,7 +110,7 @@ describe('getFlag', () => {
 // Mock decoder function
 const mockDecoder = (buffer: Uint8Array): Promise<string> => {
 	// Convert buffer to string for testing purposes
-	return Promise.resolve(TempoUtil.textDecoder.decode(buffer));
+	return Promise.resolve(TempoUtil.utf8GetString(buffer));
 };
 
 // Helper function to create a ReadableStream with Uint8Array chunks

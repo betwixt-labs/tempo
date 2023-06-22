@@ -6,10 +6,13 @@ import {
 	TempoUtil,
 	Metadata,
 	HookRegistry,
+	BebopContentType,
 } from '@tempojs/common';
 import { ServiceRegistry } from './registry';
 import { AuthInterceptor } from './intercept';
 import { ServerContext } from './context';
+import { BebopMethodAny } from './method';
+import { BebopRecord } from 'bebop';
 
 /**
  * Interface defining the configuration options for a TempoRouter instance.
@@ -83,7 +86,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	protected readonly maxRetryAttempts: number;
 	protected readonly exposeTempo: boolean;
 	protected hooks?: HookRegistry<ServerContext, TEnvironment>;
-	protected poweredByHeader = 'X-Powered-By';
+	protected poweredByHeader = 'x-powered-by';
 	protected poweredByHeaderValue?: string;
 
 	/**
@@ -132,36 +135,6 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 	abstract process(request: TRequest, response: TResponse, env: TEnvironment): Promise<void>;
 
 	/**
-	 * Protected function that retrieves the content type from the header.
-	 *
-	 * @private
-	 * @function
-	 * @throws {Error} When the content type header is not present, when it doesn't contain "application/tempo"
-	 * or when it doesn't have a format specified.
-	 * @param {string | null} header The content type header from the request.
-	 * @returns {string} The content type of the request.
-	 */
-	protected getContentType(header: string | null | undefined): string {
-		if (!header) {
-			throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, 'invalid request: no content type header');
-		}
-		if (!header.includes('application/tempo')) {
-			throw new TempoError(
-				TempoStatusCode.UNKNOWN_CONTENT_TYPE,
-				'invalid request: content type does not include application/tempo',
-			);
-		}
-		if (!header.includes('+')) {
-			throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, 'invalid request: no format on content type');
-		}
-		const format = header.split('+')[1];
-		if (format === 'bebop') {
-			return format;
-		}
-		throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request: unknown format ${format}`);
-	}
-
-	/**
 	 * Private function that retrieves custom metadata from the header.
 	 *
 	 * @private
@@ -184,9 +157,59 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 		this.hooks = hooks;
 	}
 
-	public definePoweredByHeader(variant: string): void {
+	protected definePoweredByHeader(variant: string): void {
 		this.poweredByHeaderValue = TempoUtil.buildUserAgent('javascript', TempoVersion, variant, {
 			runtime: TempoUtil.getEnvironmentName(),
 		});
+	}
+
+	/**
+	 * Deserializes an incoming request based on its content type.
+	 *
+	 * @param requestData - The incoming request data as a Uint8Array.
+	 * @param method - The Bebop method to use for deserialization.
+	 * @param contentType - The content type of the incoming request.
+	 * @returns The deserialized request record.
+	 * @throws {TempoError} When the content type is not valid.
+	 * @throws {BebopRuntimeError} When the request data cannot be deserialized.
+	 */
+	protected deserializeRequest(
+		requestData: Uint8Array,
+		method: BebopMethodAny,
+		contentType: BebopContentType,
+	): BebopRecord {
+		switch (contentType) {
+			case 'bebop':
+				return method.deserialize(requestData);
+			case 'json':
+				return method.fromJson(TempoUtil.utf8GetString(requestData));
+			default:
+				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, `invalid request content type: ${contentType}`);
+		}
+	}
+
+	/**
+	 * Serializes a response record based on its content type.
+	 *
+	 * @param response - The response record to be serialized.
+	 * @param method - The Bebop method to use for serialization.
+	 * @param contentType - The content type of the response.
+	 * @returns The serialized response as a Uint8Array.
+	 * @throws {TempoError} When the content type is not valid.
+	 * @throws {BebopRuntimeError} When the response record cannot be serialized.
+	 */
+	protected serializeResponse(
+		response: BebopRecord,
+		method: BebopMethodAny,
+		contentType: BebopContentType,
+	): Uint8Array {
+		switch (contentType) {
+			case 'bebop':
+				return method.serialize(response);
+			case 'json':
+				return TempoUtil.utf8GetBytes(method.toJson(response));
+			default:
+				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, `invalid response content type: ${contentType}`);
+		}
 	}
 }

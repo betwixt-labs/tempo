@@ -35,7 +35,7 @@ export class Metadata {
 	 */
 	private static isValidKey(key: string): boolean {
 		if (!key) return false;
-		const bytes = TempoUtil.textEncoder.encode(key); // Tempo validates strings on the byte level, not Unicode.
+		const bytes = TempoUtil.utf8GetBytes(key); // Tempo validates strings on the byte level, not Unicode.
 		for (const ch of bytes) {
 			const validLowercaseLetter = ch >= 97 && ch <= 122;
 			const validUppercaseLetter = ch >= 65 && ch <= 90;
@@ -59,7 +59,7 @@ export class Metadata {
 	private static isValidMetadataTextValue(textValue: string): boolean {
 		// Must be a valid Tempo "ASCII-Value" as defined here:
 		// This means printable ASCII (including/plus spaces); 0x20 to 0x7E inclusive.
-		const bytes = TempoUtil.textEncoder.encode(textValue); // Tempo validates strings on the byte level, not Unicode.
+		const bytes = TempoUtil.utf8GetBytes(textValue); // Tempo validates strings on the byte level, not Unicode.
 		for (const ch of bytes) {
 			if (ch < 0x20 || ch > 0x7e) {
 				return false;

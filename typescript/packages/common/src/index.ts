@@ -4,7 +4,7 @@ import { Deadline } from './deadline';
 import { TempoLogger, TempoLogLevel, ConsoleLogger } from './logger';
 import { Metadata } from './metadata';
 import { TimeSpan } from './timespan';
-import { TempoUtil, ExecutionEnvironment } from './utils';
+import { TempoUtil, ExecutionEnvironment, BebopContentType } from './utils';
 import { TempoVersion } from './version';
 import * as tempoStream from './stream';
 import {
@@ -40,4 +40,5 @@ export {
 	MethodType,
 	HookRegistry,
 	Base64,
+	BebopContentType,
 };
