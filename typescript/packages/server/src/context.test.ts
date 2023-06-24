@@ -1,8 +1,7 @@
 import { ServerContext, IncomingContext, OutgoingContext } from './context';
 import { AuthContext } from './auth';
-import { Metadata, Deadline } from '@tempojs/common';
+import { Metadata, Deadline, TempoError } from '@tempojs/common';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TempoError } from '@tempojs/common';
 
 describe('ServerContext', () => {
 	let incomingContext: IncomingContext;
