@@ -5,10 +5,10 @@ import {
 	ConsoleLogger,
 	Deadline,
 	Metadata,
-	parseCredentials,
+	parseCredential,
 	ExecutionEnvironment,
 	TempoVersion,
-	Credentials,
+	Credential,
 	tempoStream,
 	MethodType,
 	HookRegistry,
@@ -20,7 +20,7 @@ import { ClientContext } from './context';
 import { MethodInfo } from './method';
 import { RetryPolicy } from './retry';
 import { TempoUtil } from '@tempojs/common';
-import { CallCredentials, InsecureChannelCredentials } from './auth';
+import { CallCredential, InsecureChannelCredential } from './auth';
 import { BebopContentType } from '@tempojs/common';
 
 /**
@@ -131,8 +131,8 @@ export abstract class BaseChannel {
 		options?: CallOptions,
 	): Promise<AsyncGenerator<TResponse, void, undefined>>;
 
-	public abstract removeCredentials(): Promise<void>;
-	public abstract getCredentials(): Promise<Credentials | undefined>;
+	public abstract removeCredential(): Promise<void>;
+	public abstract getCredential(): Promise<Credential | undefined>;
 
 	/**
 	 * Defines a hook registry for the channel.
@@ -237,12 +237,12 @@ export class TempoChannel extends BaseChannel {
 	public static readonly defaultMaxRetryAttempts: number = 5;
 	public static readonly defaultMaxReceiveMessageSize: number = 1024 * 1024 * 4; // 4 MB
 	public static readonly defaultMaxSendMessageSize: number = 1024 * 1024 * 4; // 4 MB
-	public static readonly defaultCredentials: CallCredentials = InsecureChannelCredentials.create();
+	public static readonly defaultCredential: CallCredential = InsecureChannelCredential.create();
 	public static readonly defaultContentType: BebopContentType = 'bebop';
 
 	private readonly isSecure: boolean;
 	private readonly maxReceiveMessageSize: number;
-	private readonly credentials: CallCredentials;
+	private readonly credential: CallCredential;
 	private readonly userAgent: string;
 
 	/**
@@ -260,16 +260,16 @@ export class TempoChannel extends BaseChannel {
 		);
 		this.logger.debug('creating new TempoChannel');
 		this.isSecure = target.protocol === 'https:';
-		this.credentials = options.credentials ??= TempoChannel.defaultCredentials;
+		this.credential = options.credential ??= TempoChannel.defaultCredential;
 		if (
 			!this.isSecure &&
-			!(this.credentials instanceof InsecureChannelCredentials) &&
-			options.unsafeUseInsecureChannelCallCredentials !== true
+			!(this.credential instanceof InsecureChannelCredential) &&
+			options.unsafeUseInsecureChannelCallCredential !== true
 		) {
-			throw new Error('Cannot use secure credentials with insecure channel');
+			throw new Error('Cannot use secure credential with insecure channel');
 		}
 		this.maxReceiveMessageSize = options.maxReceiveMessageSize ??= TempoChannel.defaultMaxReceiveMessageSize;
-		this.credentials = options.credentials ??= TempoChannel.defaultCredentials;
+		this.credential = options.credential ??= TempoChannel.defaultCredential;
 		this.userAgent = TempoUtil.buildUserAgent('javascript', TempoVersion, undefined, {
 			runtime: TempoUtil.getEnvironmentName(),
 		});
@@ -320,11 +320,11 @@ export class TempoChannel extends BaseChannel {
 		return new TempoChannel(address, options);
 	}
 
-	public override async removeCredentials(): Promise<void> {
-		await this.credentials.removeCredentials();
+	public override async removeCredential(): Promise<void> {
+		await this.credential.removeCredential();
 	}
-	public override async getCredentials(): Promise<Credentials | undefined> {
-		return await this.credentials.getCredentials();
+	public override async getCredential(): Promise<Credential | undefined> {
+		return await this.credential.getCredential();
 	}
 
 	/**
@@ -476,7 +476,7 @@ export class TempoChannel extends BaseChannel {
 		if (options?.controller) {
 			requestInit.signal = options.controller.signal;
 		}
-		const credentialHeader = await this.credentials.getHeader();
+		const credentialHeader = await this.credential.getHeader();
 		if (credentialHeader) {
 			headers.set(credentialHeader.name, credentialHeader.value);
 			requestInit.credentials = 'include';
@@ -536,16 +536,16 @@ export class TempoChannel extends BaseChannel {
 		if (customHeader !== null) {
 			context.incomingMetadata = Metadata.fromHttpHeader(customHeader);
 		}
-		const responseCredentials = response.headers.get('tempo-credentials');
-		if (responseCredentials !== null) {
-			const credentials = parseCredentials(responseCredentials);
-			if (!credentials) {
+		const responseCredential = response.headers.get('tempo-credential');
+		if (responseCredential !== null) {
+			const credential = parseCredential(responseCredential);
+			if (!credential) {
 				throw new TempoError(
 					TempoStatusCode.INVALID_ARGUMENT,
-					"unable to parse credentials received on 'tempo-credentials' header",
+					"unable to parse credentials received on 'tempo-credential' header",
 				);
 			}
-			await this.credentials.storeCredentials(credentials);
+			await this.credential.storeCredential(credential);
 		}
 	}
 

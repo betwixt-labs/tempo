@@ -1,5 +1,7 @@
-import { Deadline, Metadata, Credentials } from '@tempojs/common';
+import { Deadline, Metadata, Credential } from '@tempojs/common';
 import { AuthContext } from './auth';
+import { TempoError } from '@tempojs/common';
+import { TempoStatusCode } from '@tempojs/common';
 
 /**
  * Interface for an incoming context.
@@ -32,16 +34,16 @@ export interface OutgoingContext {
 	 */
 	metadata: Metadata;
 	/**
-	 * Credentials that will be set on the outgoing response using the 'tempo-credentials' header.
+	 * Credential that will be set on the outgoing response using the 'tempo-credential' header.
 	 */
-	credentials?: Credentials;
+	credential?: Credential;
 }
 
 export class ServerContext {
 	/**
 	 * The authentication context for the incoming request.
 	 */
-	private authContext?: AuthContext;
+	private _authContext?: AuthContext | undefined;
 
 	/**
 	 * Creates a new instance of ServerContext.
@@ -52,7 +54,7 @@ export class ServerContext {
 	constructor(
 		private incomingContext: IncomingContext,
 		private outgoingContext: OutgoingContext,
-		public environment: any,
+		public environment: unknown,
 	) {}
 
 	/**
@@ -69,19 +71,20 @@ export class ServerContext {
 	 * Sets the authentication context for the incoming request.
 	 * @param authContext - the context that will be associated with the incoming request.
 	 */
-	public setAuthContext(authContext: AuthContext): void {
-		this.authContext = authContext;
+	public set authContext(authContext: AuthContext | undefined) {
+		if (authContext === undefined) throw new TempoError(TempoStatusCode.INTERNAL, 'authContext cannot be undefined');
+		this._authContext = authContext;
 	}
 
 	/**
 	 * Gets the auth context of the incoming request.
 	 * @returns The authentication context for the incoming request.
 	 */
-	public getAuthContext(): AuthContext | undefined {
-		return this.authContext;
+	public get authContext(): AuthContext | undefined {
+		return this._authContext;
 	}
 
-	freeze(): void {
+	public freeze(): void {
 		this.outgoingContext.metadata.freeze();
 	}
 
@@ -90,7 +93,7 @@ export class ServerContext {
 	 *
 	 * @returns {Headers} - The headers of the client that initiated the Tempo server call.
 	 */
-	clientHeaders(): Headers {
+	public get clientHeaders(): Headers {
 		return this.incomingContext.headers;
 	}
 
@@ -99,14 +102,14 @@ export class ServerContext {
 	 *
 	 * @returns {Metadata} - The metadata of the client that initiated the Tempo server call.
 	 */
-	clientMetadata(): Metadata | undefined {
+	public get clientMetadata(): Metadata | undefined {
 		return this.incomingContext.metadata;
 	}
 	/**
 	 * Retrieves the deadline of the client that initiated the Tempo server call.
 	 * @returns {Deadline} - The deadline of the client that initiated the Tempo server call.
 	 */
-	clientDeadline(): Deadline | undefined {
+	public get clientDeadline(): Deadline | undefined {
 		return this.incomingContext.deadline;
 	}
 
@@ -118,7 +121,7 @@ export class ServerContext {
 	 *
 	 * @returns {void}
 	 */
-	appendToOutgoingContext(key: string, value: string | string[]): void {
+	public appendToOutgoingContext(key: string, value: string | string[]): void {
 		if (Array.isArray(value)) {
 			value.forEach((v) => this.outgoingContext.metadata.append(key, v));
 		} else {
@@ -127,19 +130,20 @@ export class ServerContext {
 	}
 
 	/**
-	 * Sets the credentials for the outgoing context on the tempo-credentials header.
-	 * @param credentials The credentials to set on the outgoing context.
+	 * Sets the credential for the outgoing context on the tempo-credential header.
+	 * @param credential The credential to set on the outgoing context.
 	 */
-	setOutgoingCredentials(credentials: Credentials): void {
-		this.outgoingContext.credentials = credentials;
+	public set outgoingCredential(credential: Credential | undefined) {
+		if (credential === undefined) throw new TempoError(TempoStatusCode.INTERNAL, 'credential cannot be undefined');
+		this.outgoingContext.credential = credential;
 	}
 
 	/**
-	 * Retrieves the credentials for the outgoing context to set on
-	 * @returns The credentials or undefined if none have been set
+	 * Retrieves the credential for the outgoing context to set on
+	 * @returns The credential or undefined if none have been set
 	 */
-	getOutgoingCredentials(): Credentials | undefined {
-		return this.outgoingContext.credentials;
+	public get outgoingCredential(): Credential | undefined {
+		return this.outgoingContext.credential;
 	}
 
 	/**
@@ -150,7 +154,7 @@ export class ServerContext {
 	 *
 	 * @returns {void}
 	 */
-	setToOutgoingContext(key: string, value: string): void {
+	public setToOutgoingContext(key: string, value: string): void {
 		this.outgoingContext.metadata.set(key, value);
 	}
 }

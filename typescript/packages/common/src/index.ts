@@ -7,13 +7,7 @@ import { TimeSpan } from './timespan';
 import { TempoUtil, ExecutionEnvironment, BebopContentType } from './utils';
 import { TempoVersion } from './version';
 import * as tempoStream from './stream';
-import {
-	Credentials,
-	parseCredentials,
-	stringifyCredentials,
-	CredentialPrimitiveValue,
-	CredentialValue,
-} from './credentials';
+import { Credential, parseCredential, stringifyCredential } from './credential';
 import { MethodType } from './flags';
 
 import { HookRegistry } from './hook';
@@ -29,11 +23,9 @@ export {
 	Metadata,
 	TimeSpan,
 	TempoUtil,
-	Credentials,
-	CredentialPrimitiveValue,
-	CredentialValue,
-	parseCredentials,
-	stringifyCredentials,
+	Credential,
+	parseCredential,
+	stringifyCredential,
 	ExecutionEnvironment,
 	TempoVersion,
 	tempoStream,

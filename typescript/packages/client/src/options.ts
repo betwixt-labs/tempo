@@ -1,7 +1,7 @@
 import { TempoLogger, Deadline, BebopContentType } from '@tempojs/common';
 import { TempoChannel as TempoChannel } from './channel';
 import { RetryPolicy } from './retry';
-import { CallCredentials } from './auth';
+import { CallCredential } from './auth';
 
 /**
  * Represents the configuration options for a TempoChannel.
@@ -28,16 +28,16 @@ export class TempoChannelOptions {
 	public maxRetryAttempts?: number;
 
 	/**
-	 * The credentials handler to be used for storing and setting authentication information on calls. Defaults to the value in `TempoChannel.defaultCredentials`.
+	 * The credential handler to be used for storing and setting authentication information on calls. Defaults to the value in `TempoChannel.defaultCredential`.
 	 */
-	public credentials?: CallCredentials;
+	public credential?: CallCredential;
 
 	/**
-	 * CallCredentials are only applied if the channel is transporting over HTTPS.
+	 * CallCredential are only applied if the channel is transporting over HTTPS.
 	 * Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.
-	 * An app can configure a channel to ignore this behavior and always use CallCredentials by setting unsafeUseInsecureChannelCallCredentials on a channel.
+	 * An app can configure a channel to ignore this behavior and always use CallCredential by setting unsafeUseInsecureChannelCallCredential on a channel.
 	 */
-	public unsafeUseInsecureChannelCallCredentials?: boolean;
+	public unsafeUseInsecureChannelCallCredential?: boolean;
 
 	/**
 	 * The content type to use for the channel. Defaults to the value in `TempoChannel.defaultContentType`.
@@ -51,8 +51,8 @@ export class TempoChannelOptions {
 		this.contentType = TempoChannel.defaultContentType;
 		this.maxReceiveMessageSize = TempoChannel.defaultMaxReceiveMessageSize;
 		this.maxRetryAttempts = TempoChannel.defaultMaxRetryAttempts;
-		this.credentials = TempoChannel.defaultCredentials;
-		this.unsafeUseInsecureChannelCallCredentials = false;
+		this.credential = TempoChannel.defaultCredential;
+		this.unsafeUseInsecureChannelCallCredential = false;
 	}
 }
 

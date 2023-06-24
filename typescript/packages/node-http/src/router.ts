@@ -8,7 +8,7 @@ import {
 	TempoStatusCode,
 	TempoUtil,
 	TempoVersion,
-	stringifyCredentials,
+	stringifyCredential,
 } from '@tempojs/common';
 import {
 	AuthInterceptor,
@@ -69,7 +69,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		}
 		response.setHeader(
 			'access-control-expose-headers',
-			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credentials',
+			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credential',
 		);
 	}
 
@@ -107,7 +107,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		const authHeader = request.headers.authorization;
 		if (authHeader !== undefined && this.authInterceptor !== undefined) {
 			const authContext = await this.authInterceptor.intercept(context, authHeader);
-			context.setAuthContext(authContext);
+			context.authContext = authContext;
 		}
 	}
 
@@ -165,7 +165,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		return await method.invoke(generator, context);
@@ -228,7 +228,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
@@ -343,9 +343,9 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 				}
 				response.setHeader('content-type', contentType.raw);
 
-				const outgoingCredentials = context.getOutgoingCredentials();
-				if (outgoingCredentials) {
-					response.setHeader('tempo-credentials', stringifyCredentials(outgoingCredentials));
+				const outgoingCredential = context.outgoingCredential;
+				if (outgoingCredential) {
+					response.setHeader('tempo-credential', stringifyCredential(outgoingCredential));
 				}
 				response.setHeader('tempo-status', '0');
 				response.setHeader('tempo-message', 'OK');
@@ -368,7 +368,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 							}
 							return data;
 						},
-						context.clientDeadline(),
+						context.clientDeadline,
 					);
 				} else {
 					if (record === undefined) {

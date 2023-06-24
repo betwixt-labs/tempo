@@ -4,7 +4,7 @@ import {
 	TempoError,
 	TempoStatusCode,
 	TempoUtil,
-	stringifyCredentials,
+	stringifyCredential,
 	Deadline,
 	MethodType,
 	tempoStream,
@@ -114,7 +114,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		}
 		headers.set(
 			'access-control-expose-headers',
-			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credentials',
+			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credential',
 		);
 	}
 
@@ -122,7 +122,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		const authHeader = request.headers.get('authorization');
 		if (authHeader !== null && this.authInterceptor !== undefined) {
 			const authContext = await this.authInterceptor.intercept(context, authHeader);
-			context.setAuthContext(authContext);
+			context.authContext = authContext;
 		}
 	}
 
@@ -174,7 +174,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		return await method.invoke(generator, context);
@@ -231,7 +231,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
@@ -355,9 +355,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				}
 				responseHeaders.set('content-type', contentType.raw);
 
-				const outgoingCredentials = context.getOutgoingCredentials();
-				if (outgoingCredentials) {
-					responseHeaders.set('tempo-credentials', stringifyCredentials(outgoingCredentials));
+				const outgoingCredential = context.outgoingCredential;
+				if (outgoingCredential) {
+					responseHeaders.set('tempo-credential', stringifyCredential(outgoingCredential));
 				}
 				responseHeaders.set('tempo-status', '0');
 				responseHeaders.set('tempo-message', 'OK');
@@ -384,7 +384,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 							}
 							return data;
 						},
-						context.clientDeadline(),
+						context.clientDeadline,
 					);
 				} else {
 					if (record === undefined) {

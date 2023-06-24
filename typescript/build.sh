@@ -88,8 +88,8 @@ echo "export const TempoVersion = '$VERSION';" > $COMMON_VERSION_FILE
 
 echo "All package versions and '@tempojs' dependencies have been updated to $VERSION."
 
-# Test
-yarn vitest run
+# Install
+yarn install
 
 # Build and pack the 'common' package.
 build ./packages/common
@@ -109,5 +109,5 @@ build ./packages/cf-router
 # Build and pack the 'node-http-router' package.
 build ./packages/node-http
 
-# Install package dependencies
-yarn install
+# Test
+yarn vitest run
