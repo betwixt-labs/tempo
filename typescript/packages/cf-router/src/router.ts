@@ -4,7 +4,7 @@ import {
 	TempoError,
 	TempoStatusCode,
 	TempoUtil,
-	stringifyCredentials,
+	stringifyCredential,
 	Deadline,
 	MethodType,
 	tempoStream,
@@ -114,7 +114,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		}
 		headers.set(
 			'access-control-expose-headers',
-			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credentials',
+			'content-encoding, content-length, content-type, tempo-status, tempo-message, custom-metadata, tempo-credential',
 		);
 	}
 
@@ -355,9 +355,9 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				}
 				responseHeaders.set('content-type', contentType.raw);
 
-				const outgoingCredentials = context.getOutgoingCredentials();
-				if (outgoingCredentials) {
-					responseHeaders.set('tempo-credentials', stringifyCredentials(outgoingCredentials));
+				const outgoingCredential = context.getOutgoingCredential();
+				if (outgoingCredential) {
+					responseHeaders.set('tempo-credential', stringifyCredential(outgoingCredential));
 				}
 				responseHeaders.set('tempo-status', '0');
 				responseHeaders.set('tempo-message', 'OK');

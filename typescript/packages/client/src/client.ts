@@ -1,6 +1,6 @@
 import { BaseChannel } from './channel';
 import { ClientContext } from './context';
-import { Credentials } from '@tempojs/common';
+import { Credential } from '@tempojs/common';
 
 /**
  * Type representing a class constructor for a class extending BaseClient.
@@ -37,18 +37,18 @@ export abstract class BaseClient {
 	}
 
 	/**
-	 * Removes the current credentials from the client storage.
+	 * Removes the current credential from the client storage.
 	 */
-	public async removeCredentials(): Promise<void> {
-		await this.channel.removeCredentials();
+	public async removeCredential(): Promise<void> {
+		await this.channel.removeCredential();
 	}
 
 	/**
-	 * Gets the current credentials from the client storage.
-	 * @returns {Promise<Credentials | undefined>} - A promise that resolves with the current credentials.
+	 * Gets the current credential from the client storage.
+	 * @returns {Promise<Credential | undefined>} - A promise that resolves with the current credential.
 	 */
-	public async getCredentials(): Promise<Credentials | undefined> {
-		return await this.channel.getCredentials();
+	public async getCredential(): Promise<Credential | undefined> {
+		return await this.channel.getCredential();
 	}
 
 	public getContext(): ClientContext {
