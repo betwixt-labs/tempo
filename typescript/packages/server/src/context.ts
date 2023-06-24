@@ -1,4 +1,4 @@
-import { Deadline, Metadata, Credentials } from '@tempojs/common';
+import { Deadline, Metadata, Credential } from '@tempojs/common';
 import { AuthContext } from './auth';
 
 /**
@@ -32,9 +32,9 @@ export interface OutgoingContext {
 	 */
 	metadata: Metadata;
 	/**
-	 * Credentials that will be set on the outgoing response using the 'tempo-credentials' header.
+	 * Credential that will be set on the outgoing response using the 'tempo-credential' header.
 	 */
-	credentials?: Credentials;
+	credential?: Credential;
 }
 
 export class ServerContext {
@@ -127,19 +127,19 @@ export class ServerContext {
 	}
 
 	/**
-	 * Sets the credentials for the outgoing context on the tempo-credentials header.
-	 * @param credentials The credentials to set on the outgoing context.
+	 * Sets the credential for the outgoing context on the tempo-credential header.
+	 * @param credential The credential to set on the outgoing context.
 	 */
-	setOutgoingCredentials(credentials: Credentials): void {
-		this.outgoingContext.credentials = credentials;
+	setOutgoingCredential(credential: Credential): void {
+		this.outgoingContext.credential = credential;
 	}
 
 	/**
-	 * Retrieves the credentials for the outgoing context to set on
-	 * @returns The credentials or undefined if none have been set
+	 * Retrieves the credential for the outgoing context to set on
+	 * @returns The credential or undefined if none have been set
 	 */
-	getOutgoingCredentials(): Credentials | undefined {
-		return this.outgoingContext.credentials;
+	getOutgoingCredential(): Credential | undefined {
+		return this.outgoingContext.credential;
 	}
 
 	/**

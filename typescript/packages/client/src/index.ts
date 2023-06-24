@@ -5,13 +5,13 @@ import { ClientContext } from './context';
 import { BaseClient, ClientConstructor } from './client';
 import { MethodInfo } from './method';
 import {
-	CredentialsStorage,
+	CredentialStorage,
 	LocalStorageStrategy,
 	SessionStorageStrategy,
 	NoStorageStrategy,
-	CallCredentials,
-	InsecureChannelCredentials,
-	BearerCredentials,
+	CallCredential,
+	InsecureChannelCredential,
+	BearerCredential,
 } from './auth';
 
 export {
@@ -24,11 +24,11 @@ export {
 	BaseClient,
 	ClientConstructor,
 	MethodInfo,
-	CredentialsStorage,
+	CredentialStorage,
 	LocalStorageStrategy,
 	SessionStorageStrategy,
 	NoStorageStrategy,
-	CallCredentials,
-	InsecureChannelCredentials,
-	BearerCredentials,
+	CallCredential,
+	InsecureChannelCredential,
+	BearerCredential,
 };

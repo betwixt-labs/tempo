@@ -552,10 +552,10 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-bebop@^2.8.2:
-  version "2.8.2"
-  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.8.2.tgz#e8bf3ad778b29fae48c44cca9cd33fcdced628d2"
-  integrity sha512-1FD9VEz9sd6ZaMEZbGx9Fxdm6P6PoM8e5dwCOuFV9oJdJA0wkhcJCDPre3ZBQBmOX7Hi1yar3gSlig8QGuBtGw==
+bebop@^2.8.3:
+  version "2.8.3"
+  resolved "https://registry.yarnpkg.com/bebop/-/bebop-2.8.3.tgz#eafe6ff9945c22f45ff63a21185ca898c1c72c71"
+  integrity sha512-T3LOiNEaLSFfe6iVmYJTul9KESUSAUA+XVqSzoOY6DoOY3N9HxHR+8flLDwKW0+ia7LVKXcn4q6Q+/x3QrvNtw==
 
 benchmark@^2.1.4:
   version "2.1.4"
