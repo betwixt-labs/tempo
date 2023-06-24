@@ -107,7 +107,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		const authHeader = request.headers.authorization;
 		if (authHeader !== undefined && this.authInterceptor !== undefined) {
 			const authContext = await this.authInterceptor.intercept(context, authHeader);
-			context.setAuthContext(authContext);
+			context.authContext = authContext;
 		}
 	}
 
@@ -165,7 +165,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		return await method.invoke(generator, context);
@@ -228,7 +228,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 					}
 					return record;
 				},
-				context.clientDeadline(),
+				context.clientDeadline,
 			);
 		};
 		if (!TempoUtil.isAsyncGeneratorFunction(method.invoke)) {
@@ -343,7 +343,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 				}
 				response.setHeader('content-type', contentType.raw);
 
-				const outgoingCredential = context.getOutgoingCredential();
+				const outgoingCredential = context.outgoingCredential;
 				if (outgoingCredential) {
 					response.setHeader('tempo-credential', stringifyCredential(outgoingCredential));
 				}
@@ -368,7 +368,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 							}
 							return data;
 						},
-						context.clientDeadline(),
+						context.clientDeadline,
 					);
 				} else {
 					if (record === undefined) {

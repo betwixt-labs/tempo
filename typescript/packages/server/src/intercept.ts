@@ -12,7 +12,7 @@ export abstract class AuthInterceptor {
 	 * This method should be overridden to implement custom authentication logic.
 	 * @param context The ServerContext representing the incoming request.
 	 * @param authorizationValue The value of the Authorization header from the incoming request.
-	 * @returns A Promise resolving to an AuthContext, representing the authentication state of the request.
+	 * @returns A Promise resolving to an AuthContext (representing the authentication state of the request) or undefined if the request is not authenticated.
 	 */
-	public abstract intercept(context: ServerContext, authorizationValue: string): Promise<AuthContext>;
+	public abstract intercept(context: ServerContext, authorizationValue: string): Promise<AuthContext | undefined>;
 }

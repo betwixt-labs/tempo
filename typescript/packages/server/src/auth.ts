@@ -1,113 +1,154 @@
-/**
- * Type definition for authentication property values.
- */
-export type AuthPropertyValue = string | number | boolean;
+import { TempoError, TempoStatusCode } from '@tempojs/common';
 
 /**
  * Represents an authentication property with a name and value.
  */
 export class AuthProperty {
-	constructor(public name: string, public value: AuthPropertyValue) {}
-
+	constructor(public readonly name: string, public readonly value: unknown) {}
 	/**
 	 * Retrieves the value of the authentication property as the specified type.
 	 * @template T - The expected type of the value.
 	 * @returns The value of the authentication property cast to the specified type.
 	 */
-	public getValue<T extends AuthPropertyValue>(): T {
+	public getValue<T>(): T {
 		return this.value as T;
 	}
 }
 
 /**
- * Authentication context for a call.
- * AuthContext is the only reliable source of truth when it comes to authenticating calls.
+ * Represents an authentication context that contains authentication properties for a peer identity.
  */
 export class AuthContext {
 	private isAuthenticated: boolean;
 	private properties: Map<string, Array<AuthProperty>>;
-	private peerIdentityPropertyName?: string;
+	private _peerIdentityKey?: string;
 
 	/**
 	 * Constructs a new AuthContext instance.
-	 * @param peerIdentityPropertyName - The name of the property that represents the peer identity.
+	 * @param peerIdentityKey - The key that corresponds to the peer identity and all it's properties.
 	 * @param properties - An optional map of authentication properties.
 	 */
-	constructor(peerIdentityPropertyName?: string, properties?: Map<string, Array<AuthProperty>>) {
+	constructor(peerIdentityKey?: string, properties?: Map<string, Array<AuthProperty>>) {
 		this.isAuthenticated = false;
-		this.properties = properties || new Map<string, Array<AuthProperty>>();
-		if (peerIdentityPropertyName) {
-			this.peerIdentityPropertyName = peerIdentityPropertyName;
+		this.properties = properties ?? new Map<string, Array<AuthProperty>>();
+		if (peerIdentityKey) {
+			this._peerIdentityKey = peerIdentityKey;
 			this.isAuthenticated = true;
 		}
 	}
 
 	/**
 	 * Adds an authentication property to the context.
-	 * @param name - The name of the authentication property.
-	 * @param value - The value of the authentication property.
+	 * @param key - The key that corresponds to the authentication property.
+	 * @param propertyName - The name of the authentication property.
+	 * @param propertyValue - The value of the authentication property.
 	 */
-	public addProperty(name: string, value: AuthPropertyValue): void {
-		if (this.properties.has(name)) {
-			this.properties.get(name)!.push(new AuthProperty(name, value));
+	public addProperty(key: string, propertyName: string, propertyValue: unknown): void {
+		if (key === undefined || key === null)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'key cannot be null or undefined');
+		if (propertyName === undefined || propertyName === null)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'propertyName cannot be null or undefined');
+		if (propertyValue === undefined || propertyValue === null)
+			throw new TempoError(TempoStatusCode.INTERNAL, 'propertyValue cannot be null or undefined');
+		if (this.properties.has(key)) {
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.properties.get(key)!.push(new AuthProperty(propertyName, propertyValue));
 		} else {
-			this.properties.set(name, [new AuthProperty(name, value)]);
+			this.properties.set(key, [new AuthProperty(propertyName, propertyValue)]);
 		}
 	}
 
 	/**
-	 * Gets properties that represent the peer identity (there can be more than one).
-	 * Returns undefined if the peer is not authenticated.
+	 * Returns an array of authentication properties for the peer identity.
+	 * If the peer is not authenticated or no peer identity key is set, undefined will be returned.
+	 * @returns An array of authentication properties for the peer identity or undefined if none exist.
 	 */
 	public get peerIdentity(): Array<AuthProperty> | undefined {
 		if (!this.isPeerAuthenticated) {
 			return undefined;
 		}
-		if (!this.peerIdentityPropertyName) {
+		if (!this._peerIdentityKey) {
 			return undefined;
 		}
-		return this.properties.get(this.peerIdentityPropertyName);
+		return this.getProperties(this._peerIdentityKey);
 	}
 
 	/**
-	 * Returns the auth properties with the given name (there can be more than one).
+	 * Returns the authentication property with the given name.
+	 * If no property with the given name exists, undefined will be returned.
+	 * @param key - The key that corresponds to the authentication property.
+	 * @param name - The name of the authentication property to find.
+	 * @returns The authentication property with the given name or undefined if none exist.
+	 */
+	public findPropertyByName(key: string, name: string): AuthProperty | undefined {
+		const properties = this.properties.get(key);
+		if (properties === undefined) {
+			return undefined;
+		}
+		return properties.find((property) => property.name === name);
+	}
+
+	/**
+	 * Returns an array of authentication properties with the given name.
 	 * If no properties with the given name exist, undefined will be returned.
+	 * @param key - The key that corresponds to the authentication properties.
 	 * @param name - The name of the authentication properties to find.
 	 * @returns An array of authentication properties with the given name or undefined if none exist.
 	 */
-	public findPropertiesByName(name: string): Array<AuthProperty> | undefined {
-		return this.properties.get(name);
+	public findPropertiesByName(key: string, name: string): Array<AuthProperty> | undefined {
+		const properties = this.properties.get(key);
+		if (properties === undefined) {
+			return undefined;
+		}
+		return properties.filter((property) => property.name === name);
 	}
 
 	/**
-	 * Returns true if the peer is authenticated.
+	 * Returns an array of authentication properties for the given key.
+	 * If no properties exist for the given key, undefined will be returned.
+	 * @param key - The key that corresponds to the authentication properties.
+	 * @returns An array of authentication properties for the given key or undefined if none exist.
+	 */
+	public getProperties(key: string): Array<AuthProperty> | undefined {
+		return this.properties.get(key);
+	}
+
+	/**
+	 * Returns a boolean indicating whether the peer is authenticated or not.
+	 * @returns A boolean indicating whether the peer is authenticated or not.
 	 */
 	public get isPeerAuthenticated(): boolean {
-		return this.peerIdentityPropertyName !== undefined && this.isAuthenticated;
+		return this._peerIdentityKey !== undefined && this.isAuthenticated;
 	}
 
 	/**
-	 * Returns the name of the property that represents the peer identity.
-	 * If the peer is not authenticated, undefined is returned.
+	 * Returns the key that corresponds to the peer identity and all its properties.
+	 * If the peer is not authenticated, undefined will be returned.
+	 * @returns The key that corresponds to the peer identity and all its properties or undefined if the peer is not authenticated.
 	 */
-	public getPeerIdentityPropertyName(): string | undefined {
+	public get peerIdentityKey(): string | undefined {
 		if (!this.isAuthenticated) {
 			return undefined;
 		}
-		return this.peerIdentityPropertyName;
+		return this._peerIdentityKey;
 	}
 
 	/**
-	 * Sets the name of the property that represents the peer identity.
-	 * @param name - The name of the property to be set as the peer identity property.
-	 * @returns True if the property name was successfully set, false otherwise.
+	 * Sets the peer identity key for the authentication context.
+	 * @param key - The key that corresponds to the peer identity and all its properties.
+	 * @throws TempoError if the key does not exist in properties.
 	 */
-	public setPeerIdentityPropertyName(name: string): boolean {
-		if (this.properties.has(name)) {
-			return false;
+	public set peerIdentityKey(key: string | undefined) {
+		if (key === undefined) {
+			throw new TempoError(TempoStatusCode.INTERNAL, 'cannot set peer identity key: key is undefined');
 		}
-		this.peerIdentityPropertyName = name;
+		if (!this.properties.has(key)) {
+			throw new TempoError(
+				TempoStatusCode.INTERNAL,
+				`cannot set peer identity key: ${key} does not exist in properties`,
+			);
+		}
+		this._peerIdentityKey = key;
 		this.isAuthenticated = true;
-		return true;
 	}
 }
