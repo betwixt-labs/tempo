@@ -417,11 +417,17 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				// internal errors indicate transient problems or implementation bugs
 				// so we log them as critical errors
 				e.status === TempoStatusCode.INTERNAL
-					? this.logger.critical(message, undefined, e)
+					? this.logger.critical(e.message, undefined, e)
 					: this.logger.error(message, undefined, e);
 			} else if (e instanceof Error) {
-				message = e.message;
-				this.logger.error(message, undefined, e);
+				if (e.message.includes('D1_') && this.transmitInternalErrors === false) {
+					message = 'internal error';
+					status = TempoStatusCode.INTERNAL;
+					this.logger.critical(e.message, undefined, e);
+				} else {
+					message = e.message;
+					this.logger.error(message, undefined, e);
+				}
 			}
 			if (e instanceof Error && this.hooks !== undefined) {
 				await this.hooks.executeErrorHooks(undefined, e);
