@@ -262,10 +262,10 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 		const origin = request.headers.origin;
 		try {
 			if (request.method !== 'POST') {
-				throw new TempoError(TempoStatusCode.FAILED_PRECONDITION, 'Tempo request must be "POST"');
+				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'Tempo request must be "POST"');
 			}
 			if (!request.headers['tempo-method']) {
-				throw new TempoError(TempoStatusCode.FAILED_PRECONDITION, 'header "tempo-method" is missing.');
+				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, 'header "tempo-method" is missing.');
 			}
 			const contentTypeHeader = request.headers['content-type'];
 			if (contentTypeHeader === undefined) {
@@ -276,7 +276,7 @@ export class TempoRouter<TEnv> extends BaseRouter<IncomingMessage, TEnv, ServerR
 			const method = this.registry.getMethod(methodId);
 			if (!method) {
 				throw new TempoError(
-					TempoStatusCode.FAILED_PRECONDITION,
+					TempoStatusCode.NOT_FOUND,
 					`no service is registered which contains a method of '${methodId}'`,
 				);
 			}

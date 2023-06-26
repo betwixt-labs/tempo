@@ -161,7 +161,7 @@ export abstract class BaseChannel {
 			case 'json':
 				return TempoUtil.utf8GetBytes(method.toJson(request));
 			default:
-				throw new TempoError(TempoStatusCode.INTERNAL, `invalid request content type: ${this.contentType}`);
+				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request content type: ${this.contentType}`);
 		}
 	}
 
@@ -184,7 +184,10 @@ export abstract class BaseChannel {
 			case 'json':
 				return method.fromJson(TempoUtil.utf8GetString(response));
 			default:
-				throw new TempoError(TempoStatusCode.INTERNAL, `invalid response content type: ${this.contentType}`);
+				throw new TempoError(
+					TempoStatusCode.UNKNOWN_CONTENT_TYPE,
+					`invalid response content type: ${this.contentType}`,
+				);
 		}
 	}
 }
