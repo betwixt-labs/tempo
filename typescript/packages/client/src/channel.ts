@@ -258,12 +258,12 @@ export class TempoChannel extends BaseChannel {
 	protected constructor(target: URL, options: TempoChannelOptions) {
 		super(
 			target,
-			(options.logger ??= new ConsoleLogger('TempoChannel')),
-			(options.contentType ??= TempoChannel.defaultContentType),
+			options.logger ?? new ConsoleLogger('TempoChannel'),
+			options.contentType ?? TempoChannel.defaultContentType,
 		);
 		this.logger.debug('creating new TempoChannel');
 		this.isSecure = target.protocol === 'https:';
-		this.credential = options.credential ??= TempoChannel.defaultCredential;
+		this.credential = options.credential ?? TempoChannel.defaultCredential;
 		if (
 			!this.isSecure &&
 			!(this.credential instanceof InsecureChannelCredential) &&
@@ -271,8 +271,8 @@ export class TempoChannel extends BaseChannel {
 		) {
 			throw new Error('Cannot use secure credential with insecure channel');
 		}
-		this.maxReceiveMessageSize = options.maxReceiveMessageSize ??= TempoChannel.defaultMaxReceiveMessageSize;
-		this.credential = options.credential ??= TempoChannel.defaultCredential;
+		this.maxReceiveMessageSize = options.maxReceiveMessageSize ?? TempoChannel.defaultMaxReceiveMessageSize;
+		this.credential = options.credential ?? TempoChannel.defaultCredential;
 		this.userAgent = TempoUtil.buildUserAgent('javascript', TempoVersion, undefined, {
 			runtime: TempoUtil.getEnvironmentName(),
 		});
