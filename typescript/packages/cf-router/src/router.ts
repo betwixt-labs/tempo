@@ -122,7 +122,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 		const authHeader = request.headers.get('authorization');
 		if (authHeader !== null && this.authInterceptor !== undefined) {
 			const authContext = await this.authInterceptor.intercept(context, authHeader);
-			context.authContext = authContext;
+			if (authContext !== undefined) context.authContext = authContext;
 		}
 	}
 
@@ -411,7 +411,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 				status = e.status;
 				message = e.message;
 				// dont expose internal error messages to the client
-				if (e.status === TempoStatusCode.INTERNAL && this.transmitInternalErrors === false) {
+				if (e.status === TempoStatusCode.INTERNAL && this.transmitInternalErrors !== true) {
 					message = 'internal error';
 				}
 				// internal errors indicate transient problems or implementation bugs
@@ -420,7 +420,7 @@ export class TempoRouter<TEnv> extends BaseRouter<Request, TEnv, Response> {
 					? this.logger.critical(e.message, undefined, e)
 					: this.logger.error(message, undefined, e);
 			} else if (e instanceof Error) {
-				if (e.message.includes('D1_') && this.transmitInternalErrors === false) {
+				if (e.message.includes('D1_') && this.transmitInternalErrors !== true) {
 					message = 'internal error';
 					status = TempoStatusCode.INTERNAL;
 					this.logger.critical(e.message, undefined, e);

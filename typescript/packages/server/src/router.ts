@@ -101,16 +101,16 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 		protected readonly configuration: TempoRouterConfiguration,
 		protected readonly authInterceptor?: AuthInterceptor,
 	) {
-		this.corsEnabled = configuration.enableCors ??= false;
+		this.corsEnabled = configuration.enableCors ?? false;
 		this.allowedCorsOrigins = configuration.allowedOrigins;
-		this.transmitInternalErrors = configuration.transmitInternalErrors ??= false;
+		this.transmitInternalErrors = configuration.transmitInternalErrors ?? false;
 		this.maxReceiveMessageSize =
 			configuration.maxReceiveMessageSize ?? TempoRouterConfiguration.defaultMaxReceiveMessageSize;
 		if (configuration.maxSendMessageSize !== undefined) {
 			this.maxSendMessageSize = configuration.maxSendMessageSize;
 		}
 		this.maxRetryAttempts = configuration.maxRetryAttempts ?? TempoRouterConfiguration.defaultMaxRetryAttempts;
-		this.exposeTempo = configuration.exposeTempo ??= true;
+		this.exposeTempo = configuration.exposeTempo ?? true;
 		this.registry.init();
 	}
 
