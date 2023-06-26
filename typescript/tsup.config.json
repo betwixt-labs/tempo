@@ -1,10 +1,11 @@
 {
-    "clean": true,
-    "dts": false,
-    "entry": ["src/index.ts"],
-    "format": ["cjs", "esm"],
-    "minify": false,
-    "sourcemap": true,
-    "splitting": false,
-    "outDir": "./dist"
-  }
+	"clean": true,
+	"dts": false,
+	"entry": ["src/index.ts"],
+	"format": ["cjs", "esm"],
+	"minify": false,
+	"sourcemap": true,
+	"splitting": false,
+	"outDir": "./dist",
+	"external": ["bebop", "@tempojs/common", "@tempojs/server", "@tempojs/client"]
+}

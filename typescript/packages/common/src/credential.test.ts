@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Credential, parseCredential, stringifyCredential } from './credential';
+import { Guid } from 'bebop';
 
 describe('Credential', () => {
+	const id = Guid.newGuid();
 	const testCredential: Credential = {
 		token: 'abc123',
 		claims: new Map<string, string>([
@@ -9,7 +11,7 @@ describe('Credential', () => {
 			['email', 'jane.doe@example.com'],
 			['username', 'jane_doe'],
 		]),
-		roles: ['admin', 'editor', 42, BigInt(7), true, false],
+		roles: ['admin', 'editor', 42, BigInt(7), true, false, id],
 		signature: 'xyz789',
 	};
 

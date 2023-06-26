@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/common",
-  "version": "0.0.5",
+  "version": "0.0.9",
   "description": "tempo common",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -11,6 +11,9 @@
       "import": "./dist/index.mjs",
       "types": "./dist/index.d.ts"
     }
+  },
+  "dependencies": {
+    "bebop": "^2.8.4"
   },
   "scripts": {
     "test": "vitest"

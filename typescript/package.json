@@ -1,6 +1,6 @@
 {
   "name": "tempojs",
-  "version": "0.0.5",
+  "version": "0.0.9",
   "description": "something",
   "private": true,
   "workspaces": [
@@ -26,9 +26,8 @@
     "vitest": "^0.30.1"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.5",
-    "@tempojs/common": "^0.0.5",
-    "@tempojs/server": "^0.0.5",
-    "bebop": "^2.8.3"
+    "@tempojs/client": "^0.0.9",
+    "@tempojs/common": "^0.0.9",
+    "@tempojs/server": "^0.0.9"
   }
 }
