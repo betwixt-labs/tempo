@@ -1,3 +1,6 @@
+import { TempoError } from './error';
+import { TempoStatusCode } from './status';
+
 /**
  * Defines logging severity levels.
  */
@@ -40,18 +43,39 @@ export enum TempoLogLevel {
 }
 
 /**
- * The `TempoLogger` represents a structured logging class for
- * Bebop. It defines the necessary methods for logging messages with various
- * log levels, structured data, and optional error objects.
+ * Abstract class representing a logger that can be used to log messages with different severity levels.
  */
 export abstract class TempoLogger {
 	/**
-	 * Constructs a new logger instance.
-	 * @param sourceName - the name of the class or module that is logging messages.
-	 * @param logLevel - the minimum log level for messages to be logged.
+	 * Set of instances of `TempoLogger` globally in the application.
 	 */
-	constructor(protected sourceName: string, protected logLevel: TempoLogLevel) {
-		sourceName = sourceName.toUpperCase().replaceAll(' ', '_');
+	protected static readonly instances: Map<string, TempoLogger> = new Map<string, TempoLogger>();
+
+	/**
+	 * Set of child loggers of this logger instance.
+	 */
+	protected readonly children: Set<TempoLogger> = new Set<TempoLogger>();
+
+	/**
+	 * The parent logger of this logger instance.
+	 */
+	protected parent?: TempoLogger | undefined;
+
+	/**
+	 * Creates an instance of `TempoLogger`.
+	 *
+	 * @param {string} sourceName - The name of the source of the log messages.
+	 * @param {TempoLogLevel} logLevel - The minimum log level to log.
+	 * @param {TempoLogger} [parent] - Optional parent logger to inherit log level from.
+	 */
+	constructor(protected sourceName: string, public logLevel: TempoLogLevel, parent?: TempoLogger | undefined) {
+		sourceName = sourceName.replace(/\s+/g, '_');
+		this.parent = parent;
+		if (TempoLogger.instances.has(sourceName)) {
+			throw new TempoError(TempoStatusCode.INTERNAL, `A logger with the name '${sourceName}' already exists.`);
+		}
+		// Add the new instance to the collection
+		TempoLogger.instances.set(sourceName, this);
 	}
 
 	/**
@@ -60,6 +84,8 @@ export abstract class TempoLogger {
 	 * @param {string} message - The message to log.
 	 * @param {Record<string, unknown>} [data] - Optional structured data associated with the message.
 	 * @param {Error} [error] - Optional error object to include with the log entry.
+	 * @note some Javascript runtimes may also output the sequence of calls and asynchronous events leading to the current `trace` which are not on the call stack —
+	 * to help identify the origin of the current event evaluation loop.
 	 */
 	abstract trace(message: string, data?: Record<string, unknown>, error?: Error): void;
 
@@ -117,21 +143,71 @@ export abstract class TempoLogger {
 	 * @param {Error} [error] - Optional error object to include with the log entry.
 	 */
 	abstract write(level: TempoLogLevel, message: string, data?: Record<string, unknown>, error?: Error): void;
+
 	/**
-	 * Sets the log level
-	 * @param logLevel - the minimum log level for messages to be logged.
+	 * Sets the log level for this logger and all of its child loggers.
+	 * @param {TempoLogLevel} logLevel - The new log level to set.
+	 * @returns {void}
 	 */
 	public setLogLevel(logLevel: TempoLogLevel): void {
 		this.logLevel = logLevel;
+		if (this.children.size > 0) {
+			for (const child of this.children) {
+				child.setLogLevel(logLevel);
+			}
+		}
 	}
 
 	/**
-	 * Clones the logger with a new source name
-	 * @param sourceName - the source name to use for the cloned logger
-	 * @returns a new logger instance with the same log level as the current logger
+	 * Creates a new instance of the logger with the same configuration as the current logger.
+	 * The new logger will have the specified `sourceName` and the same log level as the current logger.
+	 * If `asOrphan` is `false`, the new logger will be a child of the current logger.
+	 *
+	 * @param {string} sourceName - The name of the new logger.
+	 * @param {boolean} [asOrphan=true] - Whether the new logger should be a child of the current logger.
+	 * @returns {TLogger} - A new instance of the logger with the same configuration as the current logger.
 	 */
-	public clone<TLogger extends TempoLogger>(sourceName: string): TLogger {
-		return Reflect.construct(this.constructor, [sourceName, this.logLevel]);
+	public clone<TLogger extends TempoLogger>(sourceName: string, asOrphan?: boolean): TLogger {
+		const newLogger = Reflect.construct(this.constructor, [
+			sourceName,
+			this.logLevel,
+			asOrphan !== true ? this : undefined,
+		]) as TLogger;
+		if (asOrphan !== true) {
+			this.children.add(newLogger);
+		}
+		return newLogger;
+	}
+
+	/**
+	 * Sets the global log level for all instances of the `TempoLogger` class.
+	 * This method updates the log level for all root loggers, which in turn updates
+	 * the log level for their children loggers.
+	 *
+	 * @param {TempoLogLevel} logLevel - The minimum log level for messages to be logged.
+	 */
+	public static setGlobalLogLevel(logLevel: TempoLogLevel): void {
+		for (const logger of this.instances.values()) {
+			// Only update the log level for root loggers. They will update their children.
+			if (!logger.parent) {
+				logger.setLogLevel(logLevel);
+			}
+		}
+	}
+
+	/**
+	 * Sets the log level for a specific logger instance identified by its `sourceName`.
+	 * This method updates the log level for the specified logger and all of its child loggers.
+	 *
+	 * @param {string} sourceName - The name of the logger instance to update.
+	 * @param {TempoLogLevel} logLevel - The new log level to set.
+	 * @returns {void}
+	 */
+	public static setSourceLogLevel(sourceName: string, logLevel: TempoLogLevel): void {
+		const logger = this.instances.get(sourceName);
+		if (logger !== undefined) {
+			logger.setLogLevel(logLevel);
+		}
 	}
 }
 
@@ -140,7 +216,7 @@ export abstract class TempoLogger {
  * abstract class that logs messages with different log levels, structured data,
  * and optional error objects to the browser or Node.js console.
  *
- * Example usage:
+ * @example
  * ```
  * const logger = new ConsoleLogger();
  * logger.debug('Debug message');
@@ -207,25 +283,24 @@ export class ConsoleLogger extends TempoLogger {
 			const stack = this.formatErrorMessage(error);
 			logError = `\n${stack}`;
 		}
-
 		switch (level) {
 			case TempoLogLevel.Trace:
-				console.trace(`[${this.sourceName}][TRACE] ${message} ${logData}${logError}`.trim());
+				console.trace(`[${this.sourceName}][trace] ${message} ${logData}${logError}`.trim());
 				break;
 			case TempoLogLevel.Debug:
-				console.debug(`[${this.sourceName}][DEBUG] ${message} ${logData}${logError}`.trim());
+				console.debug(`[${this.sourceName}][debug] ${message} ${logData}${logError}`.trim());
 				break;
 			case TempoLogLevel.Info:
-				console.info(`[${this.sourceName}][INFO] ${message} ${logData}${logError}`.trim());
+				console.info(`[${this.sourceName}][info] ${message} ${logData}${logError}`.trim());
 				break;
 			case TempoLogLevel.Warn:
-				console.warn(`[${this.sourceName}][WARN] ${message} ${logData}${logError}`.trim());
+				console.warn(`[${this.sourceName}][warn] ${message} ${logData}${logError}`.trim());
 				break;
 			case TempoLogLevel.Error:
-				console.error(`[${this.sourceName}][ERROR] ${message} ${logData}${logError}`.trim());
+				console.error(`[${this.sourceName}][error] ${message} ${logData}${logError}`.trim());
 				break;
 			case TempoLogLevel.Critical:
-				console.error(`[${this.sourceName}][CRITICAL] ${message} ${logData}${logError}`.trim());
+				console.error(`[${this.sourceName}][critical] ${message} ${logData}${logError}`.trim());
 				break;
 		}
 	}
