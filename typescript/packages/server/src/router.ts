@@ -184,7 +184,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			case 'json':
 				return method.fromJson(TempoUtil.utf8GetString(requestData));
 			default:
-				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, `invalid request content type: ${contentType}`);
+				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request content type: ${contentType}`);
 		}
 	}
 
@@ -209,7 +209,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			case 'json':
 				return TempoUtil.utf8GetBytes(method.toJson(response));
 			default:
-				throw new TempoError(TempoStatusCode.INVALID_ARGUMENT, `invalid response content type: ${contentType}`);
+				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid response content type: ${contentType}`);
 		}
 	}
 }
