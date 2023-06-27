@@ -159,7 +159,7 @@ export abstract class BaseChannel {
 			case 'bebop':
 				return method.serialize(request);
 			case 'json':
-				return TempoUtil.utf8GetBytes(method.toJson(request));
+				return TempoUtil.utf8GetBytes(method.toJSON(request));
 			default:
 				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request content type: ${this.contentType}`);
 		}
@@ -182,7 +182,7 @@ export abstract class BaseChannel {
 			case 'bebop':
 				return method.deserialize(response);
 			case 'json':
-				return method.fromJson(TempoUtil.utf8GetString(response));
+				return method.fromJSON(TempoUtil.utf8GetString(response));
 			default:
 				throw new TempoError(
 					TempoStatusCode.UNKNOWN_CONTENT_TYPE,
