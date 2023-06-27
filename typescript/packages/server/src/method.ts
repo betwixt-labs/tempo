@@ -49,7 +49,7 @@ export interface BebopMethod<TRequest extends BebopRecord, TResponse extends Beb
 	 * @param value - The response data to convert to JSON.
 	 * @returns The JSON string representation of the response data.
 	 */
-	toJson(value: TResponse): string;
+	toJSON(value: TResponse): string;
 
 	/**
 	 * Converts the given JSON string to request data.
@@ -57,7 +57,7 @@ export interface BebopMethod<TRequest extends BebopRecord, TResponse extends Beb
 	 * @param data - The JSON string to convert to request data.
 	 * @returns The request data represented by the JSON string.
 	 */
-	fromJson(data: string): TRequest;
+	fromJSON(data: string): TRequest;
 
 	/**
 	 * The type of the method.

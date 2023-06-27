@@ -182,7 +182,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			case 'bebop':
 				return method.deserialize(requestData);
 			case 'json':
-				return method.fromJson(TempoUtil.utf8GetString(requestData));
+				return method.fromJSON(TempoUtil.utf8GetString(requestData));
 			default:
 				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid request content type: ${contentType}`);
 		}
@@ -207,7 +207,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			case 'bebop':
 				return method.serialize(response);
 			case 'json':
-				return TempoUtil.utf8GetBytes(method.toJson(response));
+				return TempoUtil.utf8GetBytes(method.toJSON(response));
 			default:
 				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid response content type: ${contentType}`);
 		}
