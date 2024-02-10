@@ -12,6 +12,7 @@ import { MethodType } from './flags';
 
 import { HookRegistry } from './hook';
 import { Base64 } from './base64';
+import { Clock, EndTimer } from './time';
 
 export {
 	TempoStatusCode,
@@ -33,4 +34,6 @@ export {
 	HookRegistry,
 	Base64,
 	BebopContentType,
+	Clock,
+	EndTimer,
 };

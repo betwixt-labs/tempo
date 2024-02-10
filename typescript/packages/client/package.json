@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/client",
-  "version": "0.0.10",
+  "version": "0.0.11-alpha",
   "description": "xrpc client",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -16,6 +16,6 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@tempojs/common": "^0.0.10"
+    "@tempojs/common": "^0.0.11-alpha"
   }
 }

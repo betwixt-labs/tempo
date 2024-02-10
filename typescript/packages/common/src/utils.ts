@@ -50,6 +50,10 @@ export const ExecutionEnvironment = {
 	 * True if the current environment is Bun, otherwise false.
 	 */
 	isBun: typeof Bun !== 'undefined' && typeof Bun.version !== 'undefined',
+	/**
+	 * True if the current environment is Cloudflare Workers, otherwise false.
+	 */
+	isCloudflareWorker: typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers',
 };
 
 /**
@@ -138,6 +142,10 @@ export const TempoUtil = {
 			return 'bun';
 		} else if (ExecutionEnvironment.isJsDom) {
 			return 'jsdom';
+		} else if (ExecutionEnvironment.isDeno) {
+			return 'deno';
+		} else if (ExecutionEnvironment.isCloudflareWorker) {
+			return 'workerd';
 		}
 		return 'unknown';
 	},

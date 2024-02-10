@@ -1,6 +1,6 @@
 {
   "name": "tempojs",
-  "version": "0.0.10",
+  "version": "0.0.11-alpha",
   "description": "something",
   "private": true,
   "workspaces": [
@@ -22,12 +22,12 @@
     "prettier": "^2.8.0",
     "ts-node": "^10.9.1",
     "tsup": "^6.7.0",
-    "typescript": "^5.0.4",
+    "typescript": "^5.3.3",
     "vitest": "^0.30.1"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.10",
-    "@tempojs/common": "^0.0.10",
-    "@tempojs/server": "^0.0.10"
+    "@tempojs/client": "^0.0.11-alpha",
+    "@tempojs/common": "^0.0.11-alpha",
+    "@tempojs/server": "^0.0.11-alpha"
   }
 }

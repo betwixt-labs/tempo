@@ -226,8 +226,8 @@ export abstract class TempoLogger {
  * ```
  */
 export class ConsoleLogger extends TempoLogger {
-	constructor(sourceName: string, logLevel: TempoLogLevel = TempoLogLevel.Debug) {
-		super(sourceName, logLevel);
+	constructor(sourceName: string, logLevel: TempoLogLevel = TempoLogLevel.Debug, parent?: TempoLogger) {
+		super(sourceName, logLevel, parent);
 	}
 
 	/**

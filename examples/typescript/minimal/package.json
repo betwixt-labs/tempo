@@ -4,11 +4,11 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build:server": "bebopc &&  tsup ./server/index.ts --out-dir ./dist/server/",
-    "dev:server": "bebopc && tsx watch server",
-    "dev:client": "bebopc && wait-port 3000 && tsx watch client",
+    "build:server": "bebopc build &&  tsup ./server/index.ts --out-dir ./dist/server/",
+    "dev:server": "bebopc build && tsx watch server",
+    "dev:client": "bebopc build && wait-port 3000 && tsx watch client",
     "dev:browser": "yarn webpack serve --mode development --open --hot",
-    "start:server": "bebopc && node ./dist/server/index.cjs",
+    "start:server": "bebopc build && node ./dist/server/index.cjs",
     "build:browser": "webpack --mode production"
   },
   "workspaces": [
@@ -19,15 +19,15 @@
   ],
   "devDependencies": {
     "@types/node": "^18.7.20",
-    "bebop-tools": "^2.8.5",
+    "bebop-tools": "^3.0.3-beta.2",
     "tsup": "^6.7.0",
     "tsx": "^3.12.7",
     "typescript": "^4.8.3",
     "wait-port": "^1.0.4"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.10",
-    "@tempojs/node-http-router": "^0.0.10",
-    "bebop": "^2.8.5"
+    "@tempojs/client": "^0.0.11-alpha",
+    "@tempojs/node-http-router": "^0.0.11-alpha",
+    "bebop": "3.0.3-beta.2"
   }
 }
