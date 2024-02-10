@@ -207,7 +207,7 @@ export abstract class BaseRouter<TRequest, TEnvironment, TResponse> {
 			case 'bebop':
 				return method.serialize(response);
 			case 'json':
-				return TempoUtil.utf8GetBytes(method.toJSON(response));
+				return TempoUtil.utf8GetBytes(method.stringify(response));
 			default:
 				throw new TempoError(TempoStatusCode.UNKNOWN_CONTENT_TYPE, `invalid response content type: ${contentType}`);
 		}

@@ -1,21 +1,21 @@
 {
-  "name": "@tempojs/common",
-  "version": "0.0.11-alpha",
-  "description": "tempo common",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "dependencies": {
-    "bebop": "^3.0.3-beta.2"
-  },
-  "scripts": {
-    "test": "vitest"
-  }
+	"name": "@tempojs/common",
+	"version": "0.0.11-alpha.2",
+	"description": "tempo common",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"dependencies": {
+		"bebop": "^3.0.3-beta.3"
+	},
+	"scripts": {
+		"test": "vitest"
+	}
 }

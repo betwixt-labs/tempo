@@ -1,1 +1,1 @@
-export const TempoVersion = '0.0.11-alpha';
+export const TempoVersion = '0.0.11-alpha.2';

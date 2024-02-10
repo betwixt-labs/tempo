@@ -41,7 +41,7 @@ export interface MethodInfo<TRequest extends BebopRecord, TResponse extends Bebo
 	 * @param value - The request object to convert.
 	 * @returns A JSON string representation of the request object.
 	 */
-	toJSON(value: TRequest): string;
+	stringify(value: TRequest): string;
 
 	/**
 	 * Converts the given JSON string to a response object.

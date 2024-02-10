@@ -4,7 +4,7 @@
 //
 //
 //       bebopc version:
-//           3.0.3-beta.1
+//           3.0.3-beta.2
 //
 //
 //       bebopc source:

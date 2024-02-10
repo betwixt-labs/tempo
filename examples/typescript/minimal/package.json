@@ -18,6 +18,7 @@
     "browser"
   ],
   "devDependencies": {
+    "@swc/core": "^1.4.0",
     "@types/node": "^18.7.20",
     "bebop-tools": "^3.0.3-beta.2",
     "tsup": "^6.7.0",
@@ -26,8 +27,8 @@
     "wait-port": "^1.0.4"
   },
   "dependencies": {
-    "@tempojs/client": "^0.0.11-alpha",
-    "@tempojs/node-http-router": "^0.0.11-alpha",
-    "bebop": "3.0.3-beta.2"
+    "@tempojs/client": "^0.0.11-alpha.2",
+    "@tempojs/node-http-router": "^0.0.11-alpha.2",
+    "bebop": "3.0.3-beta.3"
   }
 }
