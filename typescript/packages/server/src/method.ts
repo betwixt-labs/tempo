@@ -49,7 +49,7 @@ export interface BebopMethod<TRequest extends BebopRecord, TResponse extends Beb
 	 * @param value - The response data to convert to JSON.
 	 * @returns The JSON string representation of the response data.
 	 */
-	toJSON(value: TResponse): string;
+	stringify(value: TResponse): string;
 
 	/**
 	 * Converts the given JSON string to request data.

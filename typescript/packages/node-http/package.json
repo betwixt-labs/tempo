@@ -1,6 +1,6 @@
 {
   "name": "@tempojs/node-http-router",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "description": "tempo node http",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -19,6 +19,6 @@
     "@types/node": "^14.14.31"
   },
   "dependencies": {
-    "@tempojs/server": "^0.0.10"
+    "@tempojs/server": "^0.0.12"
   }
 }
