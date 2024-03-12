@@ -13,7 +13,7 @@
 		}
 	},
 	"dependencies": {
-		"bebop": "^3.0.3-beta.3"
+		"bebop": "^3.0.4"
 	},
 	"scripts": {
 		"test": "vitest"
